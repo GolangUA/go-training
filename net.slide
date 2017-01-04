@@ -77,3 +77,88 @@ Formatting & parsing primitive values in Go is a common task. You probably first
 The fmt package builds on top of our knowledge of primitive formatting options but packages it in a way that’s easier to use.
 
 [[https://medium.com/go-walkthrough/go-walkthrough-fmt-55a14bbbfc53][link]]
+
+* Net package
+
+Package net provides a portable interface for network I/O, including TCP/IP, UDP, domain name resolution, and Unix domain sockets.
+
+Let's go deeply.
+
+* Net general
+
+Although the package provides access to low-level networking primitives, most clients will need only the basic interface provided by the Dial, Listen, and Accept functions and the associated Conn and Listener interfaces. The crypto/tls package uses the same interfaces and similar Dial and Listen functions.
+
+* Net Dial
+
+The Dial function connects to a server:
+
+ conn, err := net.Dial("tcp", "golang.org:80")
+ if err != nil {
+ 	// handle error
+ }
+ fmt.Fprintf(conn, "GET / HTTP/1.0\r\n\r\n")
+ status, err := bufio.NewReader(conn).ReadString('\n')
+ // ...
+
+* Net Listen
+
+The Listen function creates servers:
+
+ ln, err := net.Listen("tcp", ":8080")
+ if err != nil {
+ 	// handle error
+ }
+ for {
+ 	conn, err := ln.Accept()
+ 	if err != nil {
+ 		// handle error
+ 	}
+ 	go handleConnection(conn)
+ }
+
+* Net IP
+
+An IP is a single IP address, a slice of bytes. Functions in this package accept either 4-byte (IPv4) or 16-byte (IPv6) slices as input.
+
+ type IP []byte
+ func IPv4(a, b, c, d byte) IP
+
+* net/url
+
+Package url parses URLs and implements query escaping. [[https://golang.org/pkg/net/url/][link]]
+
+ u, err := url.Parse("http://bing.com/search?q=dotnet")
+ if err != nil {
+ 	log.Fatal(err)
+ }
+ u.Scheme = "https"
+ u.Host = "google.com"
+ q := u.Query()
+ q.Set("q", "golang")
+ u.RawQuery = q.Encode()
+ fmt.Println(u)
+
+* net/http
+
+Package http provides HTTP client and server implementations. [[https://golang.org/pkg/net/http/][link]]
+
+Get, Head, Post, and PostForm make HTTP (or HTTPS) requests:
+
+ resp, err := http.Get("http://example.com/")
+ ...
+ resp, err := http.Post("http://example.com/upload", "image/jpeg", &buf)
+ ...
+ resp, err := http.PostForm("http://example.com/form",
+ 	url.Values{"key": {"Value"}, "id": {"123"}})
+
+The client must close the response body when finished with it:
+
+ resp, err := http.Get("http://example.com/")
+ if err != nil {
+ 	// handle error
+ }
+ defer resp.Body.Close()
+ body, err := ioutil.ReadAll(resp.Body)
+ // ...
+
+

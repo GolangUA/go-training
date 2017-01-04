@@ -1,0 +1,79 @@
+Standart library, Net package
+Internal SoftServe Golang Training
+05 Jan 2017
+
+Ivan Kutuzov
+ikut@softserveinc.com
+https://discuss.7insyde.com
+https://golang.org.ua
+@arbrix
+
+* License and Materials
+
+This presentation is licensed under the [[https://creativecommons.org/licenses/by-sa/4.0/][Creative Commons Attribution-ShareAlike 4.0 International]] licence.
+
+You are encouraged to remix, transform, or build upon the material, providing you give appropriate credit and distribute your contributions under the same license.
+
+If you have suggestions or corrections to this presentation, please raise [[https://github.com/GolagnUA/go-training/isues][an issue on the GitHub project]].
+
+* Agenda
+
+- Overview Standard Library
+- Wolkthrough series
+- Net package
+- Net/http package
+
+* Standard Library
+
+One of the valuable things in Golang (about 140 packages)
+- [[http://thenewstack.io/understanding-golang-packages/][Understanding Golang Packages]]
+- [[https://golang.org/pkg/][pkg]]
+- [[https://golang.org/src][src]]
+
+* Wolkthrough
+
+A series of walkthroughs to help you understand the Go standard library better.
+
+[[https://medium.com/go-walkthrough][Go Walkthrough]]
+
+* Go Walkthrough: io package
+
+Go is a programming language built for working with bytes. Whether you have lists of bytes, streams of bytes, or individual bytes, Go makes it easy to process. From these simple primitives we build our abstractions and services.
+
+[[https://medium.com/go-walkthrough/go-walkthrough-io-package-8ac5e95a9fbd][link]]
+
+* Go Walkthrough: bytes + strings packages
+
+Sometimes we need to work with bounded, in-memory byte slices instead. While working with a list of bytes seems simple enough, there are a lot of edge cases and common operations that make using the bytes package worthwhile.
+
+[[https://medium.com/go-walkthrough/go-walkthrough-bytes-strings-packages-499be9f4b5bd][link]]
+
+* Go Walkthrough: encoding package
+
+Bytes alone don’t convey much meaning, however, once we encode data structures on top of those bytes then we can build truly useful applications.
+
+[[https://medium.com/go-walkthrough/go-walkthrough-encoding-package-bc5e912232d][link]]
+
+* Go Walkthrough: encoding/json package
+
+For better or for worse, JSON is the encoding of the Internet. Its formal definition is small enough that you could write it on the back of a napkin but yet it can encode strings, numbers, booleans, nulls, maps, and arrays. 
+
+[[https://medium.com/go-walkthrough/go-walkthrough-encoding-json-package-9681d1d37a8f][link]]
+
+* Go Walkthrough: encoding/binary
+
+When you need to squeeze every last bit or CPU cycle out of your protocol, one of the best tools is the encoding/binary package. It operates on the lowest level and is built for working with binary protocols.
+
+[[https://medium.com/go-walkthrough/go-walkthrough-encoding-binary-96dc5d4abb5d][link]]
+
+* Go Walkthrough: strconv
+
+Formatting & parsing primitive values in Go is a common task. You probably first dipped your toes into the fmt package when you started Go, however, there’s a less commonly used package for basic formatting that’s more efficient and preserves compiler type checking.
+
+[[https://medium.com/go-walkthrough/go-walkthrough-strconv-7a24632a9e73][link]]
+
+* Go Walkthrough: fmt
+
+The fmt package builds on top of our knowledge of primitive formatting options but packages it in a way that’s easier to use.
+
+[[https://medium.com/go-walkthrough/go-walkthrough-fmt-55a14bbbfc53][link]]

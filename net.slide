@@ -288,6 +288,71 @@ Third party packages
  
  const templateStr = `...
 
+* net/textproto
+
+Package textproto implements generic support for text-based request/response protocols in the style of HTTP, NNTP, and SMTP.
+
+The package provides:
+- Error, which represents a numeric error response from a server.
+- Pipeline, to manage pipelined requests and responses in a client.
+- Reader, to read numeric response code lines, key: value headers, lines wrapped with leading spaces on continuation lines, and whole text blocks ending with a dot on a line by itself.
+- Writer, to write dot-encoded text blocks.
+- Conn, a convenient packaging of Reader, Writer, and Pipeline for use with a single network connection.
+
+* net/textproto Conn
+
+A Conn represents a textual network protocol connection. It consists of a Reader and Writer to manage I/O and a Pipeline to sequence concurrent requests on the connection. These embedded types carry methods with them; see the documentation of those types for details.
+
+ type Conn struct {
+     Reader
+     Writer
+     Pipeline
+     // contains filtered or unexported fields
+ }
+
+* net/textproto Cmd
+
+Cmd is a convenience method that sends a command after waiting its turn in the pipeline. The command text is the result of formatting format with args and appending \r\n. Cmd returns the id of the command, for use with StartResponse and EndResponse.
+
+For example, a client might run a HELP command that returns a dot-body by using:
+
+ id, err := c.Cmd("HELP")
+ if err != nil {
+ 	return nil, err
+ }
+ 
+ c.StartResponse(id)
+ defer c.EndResponse(id)
+ 
+ if _, _, err = c.ReadCodeLine(110); err != nil {
+ 	return nil, err
+ }
+ text, err := c.ReadDotBytes()
+ if err != nil {
+ 	return nil, err
+ }
+ return c.ReadCodeLine(250)
+
+* net/textproto Pipeline
+
+A Pipeline manages a pipelined in-order request/response sequence.
+
+To use a Pipeline p to manage multiple clients on a connection, each client should run:
+
+ id := p.Next()	// take a number
+ 
+ p.StartRequest(id)	// wait for turn to send request
+ «send request»
+ p.EndRequest(id)	// notify Pipeline that request is sent
+ 
+ p.StartResponse(id)	// wait for turn to read response
+ «read response»
+ p.EndResponse(id)	// notify Pipeline that response is read
+
+A pipelined server can use the same calls to ensure that responses computed in parallel are written in the correct order.
+
+* Testing & Profiling
+
 * net/http/httptest
 
 Package httptest provides utilities for HTTP testing. [[https://golang.org/pkg/net/http/httptest][link]]

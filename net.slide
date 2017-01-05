@@ -1,4 +1,4 @@
-Standart library, Net package
+Standard library, Net package
 Internal SoftServe Golang Training
 05 Jan 2017
 
@@ -14,7 +14,7 @@ This presentation is licensed under the [[https://creativecommons.org/licenses/b
 
 You are encouraged to remix, transform, or build upon the material, providing you give appropriate credit and distribute your contributions under the same license.
 
-If you have suggestions or corrections to this presentation, please raise [[https://github.com/GolagnUA/go-training/isues][an issue on the GitHub project]].
+If you have suggestions or corrections to this presentation, please raise [[https://github.com/GolangUA/go-training/issues][an issue on the GitHub project]].
 
 * Agenda
 
@@ -160,5 +160,132 @@ The client must close the response body when finished with it:
  defer resp.Body.Close()
  body, err := ioutil.ReadAll(resp.Body)
  // ...
+
+* net/http (continue)
+
+For control over HTTP client headers, redirect policy, and other settings, create a Client:
+
+ client := &http.Client{
+ 	CheckRedirect: redirectPolicyFunc,
+ }
+ 
+ resp, err := client.Get("http://example.com")
+ // ...
+ 
+ req, err := http.NewRequest("GET", "http://example.com", nil)
+ // ...
+ req.Header.Add("If-None-Match", `W/"wyzzy"`)
+ resp, err := client.Do(req)
+ // ...
+
+* net/http (continue 2)
+
+For control over proxies, TLS configuration, keep-alives, compression, and other settings, create a Transport:
+
+ tr := &http.Transport{
+ 	TLSClientConfig:    &tls.Config{RootCAs: pool},
+ 	DisableCompression: true,
+ }
+ client := &http.Client{Transport: tr}
+ resp, err := client.Get("https://example.com")
+ // ...
+
+*Important* Clients and Transports are safe for concurrent use by multiple goroutines and for efficiency should only be created once and re-used.
+
+* net/http (continue 3)
+
+ListenAndServe starts an HTTP server with a given address and handler. The handler is usually nil, which means to use DefaultServeMux. Handle and HandleFunc add handlers to DefaultServeMux:
+
+ http.Handle("/foo", fooHandler)
+ 
+ http.HandleFunc("/bar", func(w http.ResponseWriter, r *http.Request) {
+ 	fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+ })
+ 
+ log.Fatal(http.ListenAndServe(":8080", nil))
+
+More control over the server's behavior is available by creating a custom Server:
+
+ s := &http.Server{
+ 	Addr:           ":8080",
+ 	Handler:        myHandler,
+ 	ReadTimeout:    10 * time.Second,
+ 	WriteTimeout:   10 * time.Second,
+ 	MaxHeaderBytes: 1 << 20,
+ }
+ log.Fatal(s.ListenAndServe())
+
+* net/http (handler)
+
+A Handler responds to an HTTP request.
+
+ServeHTTP should write reply headers and data to the ResponseWriter and then return. Returning signals that the request is finished; it is not valid to use the ResponseWriter or read from the Request.Body after or concurrently with the completion of the ServeHTTP call.
+
+Depending on the HTTP client software, HTTP protocol version, and any intermediaries between the client and the Go server, it may not be possible to read from the Request.Body after writing to the ResponseWriter. Cautious handlers should read the Request.Body first, and then reply.
+
+Except for reading the body, handlers should not modify the provided Request.
+
+If ServeHTTP panics, the server (the caller of ServeHTTP) assumes that the effect of the panic was isolated to the active request. It recovers the panic, logs a stack trace to the server error log, and hangs up the connection.
+
+* net/http (handler continue)
+
+ func FileServer(root FileSystem) Handler
+
+FileServer returns a handler that serves HTTP requests with the contents of the file system rooted at root.
+
+To use the operating system's file system implementation, use http.Dir
+
+ func NotFoundHandler() Handler
+
+NotFoundHandler returns a simple request handler that replies to each request with a “404 page not found” reply.
+
+ func RedirectHandler(url string, code int) Handler
+
+RedirectHandler returns a request handler that redirects each request it receives to the given url using the given status code.
+
+* net/http (handler continue2)
+
+ func StripPrefix(prefix string, h Handler) Handler
+
+StripPrefix returns a handler that serves HTTP requests by removing the given prefix from the request URL's Path and invoking the handler h.
+
+ func TimeoutHandler(h Handler, dt time.Duration, msg string) Handler
+
+TimeoutHandler returns a Handler that runs h with the given time limit.
+
+* net/http type ServeMux
+
+ServeMux is an HTTP request multiplexer. It matches the URL of each incoming request against a list of registered patterns and calls the handler for the pattern that most closely matches the URL.
+
+Patterns name fixed, rooted paths, like "/favicon.ico", or rooted subtrees, like "/images/" (note the trailing slash). Longer patterns take precedence over shorter ones, so that if there are handlers registered for both "/images/" and "/images/thumbnails/", the latter handler will be called for paths beginning "/images/thumbnails/" and the former will receive requests for any other paths in the "/images/" subtree.
+
+Note that since a pattern ending in a slash names a rooted subtree, the pattern "/" matches all paths not matched by other registered patterns, not just the URL with Path == "/".
+
+Third party packages
+- [[http://github.com/gorill/mux][gorilla mux]]
+- [[https://github.com/julienschmidt/httprouter][HttpRouter]]
+
+* A web server
+
+[[https://golang.org/doc/effective_go.html#web_server][Effective Go]]
+
+ var addr = flag.String("addr", ":1718", "http service address") // Q=17, R=18
+ 
+ var templ = template.Must(template.New("qr").Parse(templateStr))
+ 
+ func main() {
+     flag.Parse()
+     http.Handle("/", http.HandlerFunc(QR))
+     err := http.ListenAndServe(*addr, nil)
+     if err != nil {
+         log.Fatal("ListenAndServe:", err)
+     }
+ }
+ 
+ func QR(w http.ResponseWriter, req *http.Request) {
+     templ.Execute(w, req.FormValue("s"))
+ }
+ 
+ const templateStr = `...
 
 

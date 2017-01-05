@@ -288,4 +288,100 @@ Third party packages
  
  const templateStr = `...
 
+* net/http/httptest
 
+Package httptest provides utilities for HTTP testing. [[https://golang.org/pkg/net/http/httptest][link]]
+
+ Constants
+ func NewRequest(method, target string, body io.Reader) *http.Request
+ type ResponseRecorder
+     func NewRecorder() *ResponseRecorder
+     func (rw *ResponseRecorder) Flush()
+     func (rw *ResponseRecorder) Header() http.Header
+     func (rw *ResponseRecorder) Result() *http.Response
+     func (rw *ResponseRecorder) Write(buf []byte) (int, error)
+     func (rw *ResponseRecorder) WriteHeader(code int)
+     func (rw *ResponseRecorder) WriteString(str string) (int, error)
+ type Server
+     func NewServer(handler http.Handler) *Server
+     func NewTLSServer(handler http.Handler) *Server
+     func NewUnstartedServer(handler http.Handler) *Server
+     func (s *Server) Close()
+     func (s *Server) CloseClientConnections()
+     func (s *Server) Start()
+     func (s *Server) StartTLS()
+
+* net/http/httptest ResponseRecorder
+
+ handler := func(w http.ResponseWriter, r *http.Request) {
+ 	http.Error(w, "something failed", http.StatusInternalServerError)
+ }
+ 
+ req := httptest.NewRequest("GET", "http://example.com/foo", nil)
+ w := httptest.NewRecorder()
+ handler(w, req)
+ 
+ fmt.Printf("%d - %s", w.Code, w.Body.String())
+
+* net/http/httptest Server
+
+ ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+ 	fmt.Fprintln(w, "Hello, client")
+ }))
+ defer ts.Close()
+ 
+ res, err := http.Get(ts.URL)
+ if err != nil {
+ 	log.Fatal(err)
+ }
+ greeting, err := ioutil.ReadAll(res.Body)
+ res.Body.Close()
+ if err != nil {
+ 	log.Fatal(err)
+ }
+ 
+ fmt.Printf("%s", greeting
+
+* net/http/pprof
+
+Package pprof serves via its HTTP server runtime profiling data in the format expected by the pprof visualization tool.
+
+The package is typically only imported for the side effect of registering its HTTP handlers. The handled paths all begin with /debug/pprof/.
+
+To use pprof, link this package into your program:
+
+ import _ "net/http/pprof"
+
+If your application is not already running an http server, you need to start one. Add "net/http" and "log" to your imports and the following code to your main function:
+
+ go func() {
+ 	log.Println(http.ListenAndServe("localhost:6060", nil))
+ }()
+
+* net/http/pprof how to use
+
+Then use the pprof tool to look at the heap profile:
+
+ go tool pprof http://localhost:6060/debug/pprof/heap
+
+Or to look at a 30-second CPU profile:
+
+ go tool pprof http://localhost:6060/debug/pprof/profile
+
+Or to look at the goroutine blocking profile, after calling runtime.SetBlockProfileRate in your program:
+
+ go tool pprof http://localhost:6060/debug/pprof/block
+
+Or to collect a 5-second execution trace:
+
+ wget http://localhost:6060/debug/pprof/trace?seconds=5
+
+To view all available profiles, open http://localhost:6060/debug/pprof/ in your browser.
+
+* Tasks
+
+1. Create TCP Proxy server
+2. Create HTTP Proxy server
+3. Create simple CRUD server (with saving data in DB (PostgreSQL, MySQL, MongoDB))
+
+* Questions?

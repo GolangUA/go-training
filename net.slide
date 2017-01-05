@@ -10,7 +10,7 @@ https://golang.org.ua
 
 * License and Materials
 
-This presentation is licensed under the [[https://creativecommons.org/licenses/by-sa/4.0/][Creative Commons Attribution-ShareAlike 4.0 International]] licence.
+This presentation is licensed under the [[https://creativecommons.org/licenses/by-sa/4.0/][Creative Commons Attribution-ShareAlike 4.0 International]] license.
 
 You are encouraged to remix, transform, or build upon the material, providing you give appropriate credit and distribute your contributions under the same license.
 
@@ -19,7 +19,7 @@ If you have suggestions or corrections to this presentation, please raise [[http
 * Agenda
 
 - Overview Standard Library
-- Wolkthrough series
+- Walkthrough series
 - Net package
 - Net/http package
 
@@ -30,7 +30,7 @@ One of the valuable things in Golang (about 140 packages)
 - [[https://golang.org/pkg/][pkg]]
 - [[https://golang.org/src][src]]
 
-* Wolkthrough
+* Walkthrough
 
 A series of walkthroughs to help you understand the Go standard library better.
 
@@ -448,5 +448,6 @@ To view all available profiles, open http://localhost:6060/debug/pprof/ in your 
 1. Create TCP Proxy server
 2. Create HTTP Proxy server
 3. Create simple CRUD server (with saving data in DB (PostgreSQL, MySQL, MongoDB))
+4. Create simple chat server on TCP base
 
 * Questions?

@@ -1,0 +1,436 @@
+Go Traps
+Internal SoftServe Golang Training
+12 Jan 2017
+
+Ivan Kutuzov
+ikut@softserveinc.com
+https://discuss.7insyde.com
+https://golang.org.ua
+@arbrix
+
+* License and Materials
+
+This presentation is licensed under the [[https://creativecommons.org/licenses/by-sa/4.0/][Creative Commons Attribution-ShareAlike 4.0 International]] license.
+
+You are encouraged to remix, transform, or build upon the material, providing you give appropriate credit and distribute your contributions under the same license.
+
+If you have suggestions or corrections to this presentation, please raise [[https://github.com/GolangUA/go-training/issues][an issue on the GitHub project]].
+
+* Agenda
+
+Go Traps
+- Slice
+- Map
+- Boosted Iteration
+- Shadowing
+- Nil Error
+- Append
+- Type Assertions
+- Mean
+- Defer
+- Character constant
+- Range
+- Method receiver
+- Label
+- Date format
+- Blocked Goroutines and Resource Leaks
+
+* Traps, Gotchas, and Common Mistakes
+
+Go is a simple and fun language, but, like any other language, it has a few gotchas... Many of those gotchas are not entirely Go's fault. Some of these mistakes are natural traps if you are coming from another language. Others are due to faulty assumptions and missing details.
+
+[[http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/index.html#op_precedence][Kyle Quest: 50 Shades of Go: Traps, Gotchas, and Common Mistakes for New Golang Devs]]
+
+[[https://go-traps.appspot.com][Site: Go Traps]]
+
+* Slice
+
+ package main
+ 
+ import "fmt"
+ 
+ func main() {
+ 	nephews := []string{"Huey", "Dewey"}
+ 	nephews = append(nephews, "Louie")
+ 
+ 	for nephew := range nephews {
+ 		fmt.Println("Hello", nephew)
+ 	}
+    str := "Café-society"
+ 
+ 	for i, c := range str {
+ 		fmt.Printf("Character #%d is %c \n", i, c)
+ 	}
+ }
+
+* Map
+
+ package main
+ 
+ import "fmt"
+ 
+ func main() {
+ 	m := map[string]int{
+ 		"zero":  0,
+ 		"one":   1,
+ 		"two":   2,
+ 		"three": 3,
+ 		"four":  4,
+ 		"five":  5,
+ 	}
+ 	for name, value := range m {
+ 		fmt.Println(name, "is english for number", value)
+ 	}
+ 
+ 	m := map[string]int{"one": 1, "two": 2, "three": 3}
+ 	fmt.Println(m["four"])
+ }
+
+* Iteration
+
+ package main
+ 
+ import "fmt"
+ 
+ func main() {
+ 	twoNephews := []string{"Huey", "Dewey"}
+ 	threeNephews := append(twoNephews , "Louie")
+ 
+ 	for i := range threeNephews {
+ 		nephew := threeNephews[i]
+ 		go func(){
+ 			fmt.Println("Hello", nephew)
+ 		}()
+ 	}	
+ }
+
+* Shadowing
+
+ package main
+ 
+ import "fmt"
+ 
+ func main() {
+ 	// If this loops forever, I might have broken the Collatz conjecture!!
+ 	i := 1859
+ 	fmt.Println(i)
+ 	for i != 1 {
+ 		if i%2 == 0 {
+ 			i := i / 2
+ 			fmt.Println("i/2\t=", i)
+ 		} else {
+ 			i := 3*i + 1
+ 			fmt.Println("3i + 1\t=", i)
+ 		}
+ 	}
+ }
+
+* Nil Error
+
+ package main
+ 
+ import "fmt"
+ 
+ type NephewError struct {
+ 	impostor string
+ }
+ 
+ func (e *NephewError) Error() string {
+ 	return fmt.Sprint("I don't recall having a nephew named ", e.impostor)
+ }
+ //...
+
+* Nil Error
+
+ //...
+ func main() {
+ 	greeting, err := secureGreet("Dewey")
+ 	if err != nil {
+ 		fmt.Printf("error calling secureGreet: %v", err)
+ 		return
+ 	}
+ 	fmt.Println(greeting)
+ }
+ 
+ func secureGreet(nephew string) (string, error) {
+ 	var greeting string
+ 	var err *NephewError
+ 	if nephew != "Huey" && nephew != "Dewey" && nephew != "Louie" {
+ 		greeting, err = "", &NephewError{nephew}
+ 	} else {
+ 		greeting, err = fmt.Sprint("Hello ", nephew), nil
+ 	}
+ 	return greeting, err
+ }
+
+* One more way of checking
+
+ package main
+ 
+ import "fmt"
+ 
+ func main() {
+   greeting, err := filterGreet("BeagleBoy")
+   if err != nil {
+     fmt.Println(err)
+     return
+   }
+   fmt.Println("Here is my greeting:", greeting)
+ }
+ 
+ func greet(name string) (greeting string, err error) {
+   return fmt.Sprint("Hello ", name), nil
+ }
+ //...
+
+* Our filter
+
+ //...
+ func filterGreet(name string) (greeting string, err error) {
+   if name == "" {
+     greeting, err = "", fmt.Errorf("Not supposed to greet the void...")
+   } else {
+     msg, err := greet(name)
+     if name == "Huey" || name == "Dewey" || name == "Louie" {
+       greeting = msg
+     } else {
+       err = fmt.Errorf("not a legit nephew : %q", name)
+       greeting = fmt.Sprintf("No greeting because of error [%v]", err.Error())
+     }
+   }
+   return
+ }
+
+* Append
+
+ package main
+ 
+ import "fmt"
+ 
+ func main() {
+ 	a := make([]int, 3, 4)
+ 	a[0], a[1], a[2] = 0, 1, 2
+ 
+ 	b := append(a, 66)
+ 	b[0] = 6
+ 	c := append(a, 77)
+ 	c[0] = 7
+ 	d := append(a, 88, 99)
+ 	d[0] = 9
+ 
+ 	fmt.Println(a)
+ 	fmt.Println(b)
+ 	fmt.Println(c)
+ 	fmt.Println(d)
+ }
+
+* Type Assertions
+
+ package main
+ 
+ import "fmt"
+ 
+ type Animal interface {
+ 	Say() string
+ }
+ 
+ type Dog struct {
+ 	name string
+ }
+ 
+ func (d Dog) Say() string {
+ 	return fmt.Sprintf("%v barks", d.name)
+ }
+ //...
+
+* Type Assertions
+
+ //...
+ func main() {
+ 	var x Animal = Dog{"Rosie"}
+ 
+ 	if x, ok := x.(Human); ok {
+ 		fmt.Println(x.lastName, "doesn't want to be treated like dogs and cats.")
+ 	} else {
+ 		fmt.Println(x.Say())
+ 	}
+ }
+ 
+ type Human struct {
+ 	firstName string
+ 	lastName  string
+ }
+ 
+ // Humans are technically animals, and they say things.
+ func (h Human) Say() string {
+ 	return fmt.Sprintf("%v %v speaks", h.firstName, h.lastName)
+ }
+
+* Mean
+
+ package main
+ 
+ import "fmt"
+ import "math/rand"
+ 
+ // The actual mean may not be an integer.
+ // This calculates the TRUNCATED VALUE (rounded towards zero) of the actual mean of a and b.
+ func integerMean(a, b int) int {
+ 	return (a + b) / 2
+ }
+ 
+ //...
+
+* Mean
+
+ //...
+ func main() {
+ 	lower, between, greater, noneOfTheAbove := 0, 0, 0, 0
+ 	for i := 0; i < 100; i++ {
+ 		// Non-negative random integers
+ 		a, b := rand.Int(), rand.Int()
+ 		// Let a be the smaller
+ 		if a > b {
+ 			a, b = b, a
+ 		}
+ 		m := integerMean(a, b)
+ 		if m < a {
+ 			lower++
+ 		} else if a <= m && m <= b {
+ 			between++
+ 		} else if b < m {
+ 			greater++
+ 		} else {
+ 			noneOfTheAbove++
+ 		}
+ 	}
+ 	fmt.Println("lower =", lower,"between =", between,"greater =", greater,"noneOfTheAbove =", noneOfTheAbove)
+ }
+
+* Coffee Break
+
+* Defer
+
+ package main
+ 
+ import "fmt"
+ 
+ func main() {  
+     var i int = 1
+ 
+     defer fmt.Println("result =>",func() int { return i * 2 }())
+     i++
+     //prints: result => 2 (not ok if you expected 4)
+ }
+
+* Character constant
+
+ package main
+ 
+ import "fmt"
+ 
+ const PLUS = '+'
+ const IMG_UNIT = 'i'
+ 
+ func main() {
+ 	real := 4
+ 	img := 3
+ 	complex := real + PLUS + img + IMG_UNIT
+ 	fmt.Println(complex)
+ }
+
+* Range
+
+ package main
+ 
+ import "fmt"
+ 
+ type Point struct{ x, y int }
+ 
+ func main() {
+ 	s := []Point{
+ 		{1, 2},
+ 		{3, 4},
+ 		{5, 6},
+ 	}
+ 	// Diagonal symmetry: just swap x and y
+ 	for _, p := range s {
+ 		p.x, p.y = p.y, p.x
+ 	}
+ 	fmt.Println(s)
+ }
+
+* Method receiver
+
+ package main
+ 
+ import "fmt"
+ 
+ type Point struct{ x, y int }
+ 
+ // Diagonal symmetry: just swap x and y
+ func (p Point) reflect(){
+ 	p.x, p.y = p.y, p.x
+ }
+ 
+ func main() {
+ 	s := []Point{
+ 		{1, 2},
+ 		{3, 4},
+ 		{5, 6},
+ 	}
+ 	s[0].reflect()
+ 	s[1].reflect()
+ 		
+ 	fmt.Println(s)
+ }
+
+* Label
+
+ package main
+ 
+ import "fmt"
+ 
+ func main() {  
+         for {
+             switch {
+             case true:
+                 fmt.Println("breaking out...")
+                 break
+             }
+         }
+ 
+     fmt.Println("out!")
+ }
+
+* Date format
+
+ package main
+ 
+ import "fmt"
+ import "time"
+ 
+ func main() {
+ 	t, err := time.Parse("2006-01-01", "2006-01-02")
+ 	fmt.Println(t)
+ 	fmt.Println(err)
+ }
+
+* Blocked Goroutines and Resource Leaks
+
+ func First(query string, replicas ...Search) Result {  
+     c := make(chan Result)
+     searchReplica := func(i int) { c <- replicas[i](query) }
+     for i := range replicas {
+         go searchReplica(i)
+     }
+     return <-c
+ }
+
+* See also
+
+- The golang wiki has a page [[https://github.com/golang/go/wiki/CommonMistakes][CommonMistakes]] about gotchas.
+- The page [[http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/][50 Shades of Go: Traps, Gotchas...]] on CloudImmunity.
+- The [[https://godoc.org/golang.org/x/tools/cmd/vet][command *vet*]] helps detecting potential errors in code.
+- [[http://programming-idioms.org/][programming-idioms.org]] has over 120 Go idiomatic snippets (and other languages).
+- [[https://gobyexample.com/][gobyexample.com]] has over 60 Go snippets.

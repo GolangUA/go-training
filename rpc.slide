@@ -1,0 +1,141 @@
+Communication, Network, RPC
+Internal SoftServe Golang Training
+26 Jan 2017
+
+Ivan Kutuzov
+ikut@softserveinc.com
+https://discuss.7insyde.com
+https://golang.org.ua
+@arbrix
+
+* License and Materials
+
+This presentation is licensed under the [[https://creativecommons.org/licenses/by-sa/4.0/][Creative Commons Attribution-ShareAlike 4.0 International]] license.
+
+You are encouraged to remix, transform, or build upon the material, providing you give appropriate credit and distribute your contributions under the same license.
+
+If you have suggestions or corrections to this presentation, please raise [[https://github.com/GolangUA/go-training/issues][an issue on the GitHub project]].
+
+* Agenda
+
+- How does the Internet work
+- TCP / UDP / ...
+- HTTP / HTTP2
+- RPC, gRPC
+
+* How does the Internet work (address lookup)
+
+.image ./img/f1_full.gif _ 800
+
+* How does the Internet work (get html)
+
+.image ./img/f2.gif _ 800
+
+* How does the Internet work (get css)
+
+.image ./img/f3.gif _ 800
+
+* How does the Internet work (get images)
+
+.image ./img/f4.gif _ 800
+
+* How does the Internet work (get images)
+
+.image ./img/f5.gif _ 800
+
+* How does the Internet work (get images)
+
+.image ./img/f6.gif _ 800
+
+.link https://www.codeproject.com/kb/html/speedupwebsite.aspx
+.link https://developer.mozilla.org/en-US/docs/Learn/Common_questions/How_does_the_Internet_work
+
+* Transmission Control Protocol
+
+Web browsing, email and file transfer are common applications that make use of TCP. TCP is used to control segment size, rate of data exchange, flow control and network congestion. TCP is preferred where error correction facilities are required at network interface level.
+
+Use by other protocols: HTTP, HTTPs, FTP, SMTP, Telnet
+
+* User Datagram Protocol
+
+UDP is largely used by time sensitive applications as well as by servers that answer small queries from huge number of clients. UDP is compatible with packet broadcast - sending to all on a network and multicasting – sending to all subscribers. UDP is commonly used in Domain Name System, Voice over IP, Trivial File Transfer Protocol and online games.
+
+Use be other protocols: DNS, DHCP, TFTP, SNMP, RIP, VOIP.
+
+* HTTP Internet Standard
+
+The work on turning HTTP into an official IETF Internet standard proceeded in parallel with the documentation effort around HTTP/1.0 and happened over a period of roughly four years: between 1995 and 1999.
+
+The HTTP/1.1 standard resolved a lot of the protocol ambiguities found in earlier versions and introduced a number of critical performance optimizations: keepalive connections, chunked encoding transfers, byte-range requests, additional caching mechanisms, transfer encodings, and request pipelining.
+
+.link https://hpbn.co/brief-history-of-http/
+
+* HTTP/2: Improving Transport Performance
+
+The primary focus of HTTP/2 is on improving transport performance and enabling both lower latency and higher throughput. The major version increment sounds like a big step, which it is and will be as far as performance is concerned, but it is important to note that none of the high-level protocol semantics are affected: all HTTP headers, values, and use cases are the same.
+
+At a high level, HTTP/2:
+
+- is binary, instead of textual
+- is fully multiplexed, instead of ordered and blocking
+- can therefore use one connection for parallelism
+- uses header compression to reduce overhead
+- allows servers to “push” responses proactively into client caches
+
+.link https://http2.github.io/faq/
+
+* RPC
+
+Remote Procedure Call (RPC) is a protocol that one program can use to request a service from a program located in another computer on a network without having to understand the network's details. A procedure call is also sometimes known as a function call or a subroutine call.
+
+.image ./img/rpc_schema.gif _ 400
+
+* gRPC
+
+A high performance, open source, general RPC framework that puts mobile and HTTP/2 first.
+
+.link grpc.io
+.link https://github.com/grpc/grpc
+
+* gRPC (high performance)
+
+There are many places in the gRPC stack which help the high performance, low latency, flow controlled communication between client and server. gRPC builds by default on the new HTTP/2 protocol and uses protocol buffers as an optimized binary data transfer format. The new support for connection sharing, header compression, flow control and streams in HTTP/2 allows for lower latencies and reduced round-trip times.
+
+* gRPC (open source)
+
+gRPC was developed with over 10 years of experience at Google in high performance, high throughput, low latency communication between services. We made it open source so others can benefit from it and improve it.
+
+* gRPC (general RPC framework)
+
+Protocol buffers, the default underlying transport data format in gRPC has been open source for some time but no RPC framework that built on it gained much traction. With the introduction of gRPC and the tooling and support for many programming languages, it’s pluggable architecture and the open source community around it, gRPC aims to bring the benfits of HTTP/2 and protocol buffers to every developer in an easy consumable way.
+
+* gRPC (mobile and HTTP/2 first)
+
+HTTP/2 brings many improvements over the outdated HTTP/1.1 and gRPC makes direct use of them. The support of shared connections, header compression and flow control among other improvements increases efficiency and minimizes resource consumption. This allows for improved communication of mobile devices with your services.
+
+* protocol buffers
+
+Protocol buffers are a flexible, efficient, automated mechanism for serializing structured data – think XML, but smaller, faster, and simpler. You define how you want your data to be structured once, then you can use special generated source code to easily write and read your structured data to and from a variety of data streams and using a variety of languages. You can even update your data structure without breaking deployed programs that are compiled against the "old" format.
+
+.link https://developers.google.com/protocol-buffers/docs/overview
+
+Protocol buffers have many advantages over XML for serializing structured data.
+
+- are simpler
+- are 3 to 10 times smaller
+- are 20 to 100 times faster
+- are less ambiguous
+- generate data access classes that are easier to use programmatically
+
+* Benchmarks of Go serialization
+
+.link https://github.com/alecthomas/go_serialization_benchmarks
+
+.link http://awesome-go.com/#serialization
+.link https://go.libhunt.com/categories/547-serialization
+
+* Summary
+
+* Questions?
+
+* Demo time

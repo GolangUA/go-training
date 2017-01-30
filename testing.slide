@@ -1,0 +1,43 @@
+Testing, going deeper
+Internal SoftServe Golang Training
+31 Jan 2017
+
+Ivan Kutuzov
+ikut@softserveinc.com
+https://discuss.7insyde.com
+https://golang.org.ua
+@arbrix
+
+* License and Materials
+
+This presentation is licensed under the [[https://creativecommons.org/licenses/by-sa/4.0/][Creative Commons Attribution-ShareAlike 4.0 International]] license.
+
+You are encouraged to remix, transform, or build upon the material, providing you give appropriate credit and distribute your contributions under the same license.
+
+If you have suggestions or corrections to this presentation, please raise [[https://github.com/GolangUA/go-training/issues][an issue on the GitHub project]].
+
+* Agenda
+
+- Testing package
+- 5 simple tips and tricks for writing tests
+- Mocking in Golang
+- Tests with flags
+- Covering
+- Interface & composition
+- Concurrency
+
+* Testing package
+
+Testing your code is as important as writing it in the first place. Writing tests for the code is a good way to ensure quality and improve reliability. This article will highlight some of the Golang conventions which are followed while writing unit tests.
+
+Go comes with a testing package which provides support for automated testing of Go packages. The command go test automates the execution of any test function which is found in “*_test.go” files corresponding to the package under test.
+
+* Links
+
+- [[https://medium.com/@thejasbabu/testing-in-golang-c378b351002d#.8lggxiwvm][Testing in Golang]]
+- [[https://splice.com/blog/lesser-known-features-go-test/][Lesser-known features of go test]]
+- [[https://blog.golang.org/cover][Go Cover]]
+- [[https://nathanleclaire.com/blog/2015/10/10/interfaces-and-composition-for-effective-unit-testing-in-golang][Interfaces and Composition for Effective Unit Testing in Golang]]
+- [[https://medium.com/@matryer/5-simple-tips-and-tricks-for-writing-unit-tests-in-golang-619653f90742#.428t6brjr][5 simple tips and tricks for writing unit tests in #golang]]
+- [[https://smartystreets.com/blog/tags/testing-in-go-series][Testing in Go by example series]]
+

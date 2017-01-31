@@ -468,11 +468,11 @@ Some frameworks and packages do exist that attempt to solve mocking for youâ€Šâ€
 
 * Concurrency Testing Demo
 
-Pipline:
+Pipeline:
 
-                   | subsystem-requests |    | processing each subsystem response |
- client-request -> | subsystem-requests | -> | processing each subsystem response | -> compose response
-                   | subsystem-requests |    | processing each subsystem response |
+ .                 | subsystem-requests |    | processing |
+ client-request -> | subsystem-requests | -> | processing | -> compose response
+                   | subsystem-requests |    | processing |
 
 For testing:
 

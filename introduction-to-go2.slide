@@ -1,0 +1,1033 @@
+Introduction to Go (Part 2)
+Internal SoftServe Golang Training
+20 Apr 2017
+
+Ivan Kutuzov
+ikut@softserveinc.com
+https://discuss.7insyde.com
+https://golang.org.ua
+@arbrix
+
+* License and Materials
+
+Dave Cheney is the original author of all this materials
+
+This presentation is licensed under the [[https://creativecommons.org/licenses/by-sa/4.0/][Creative Commons Attribution-ShareAlike 4.0 International]] licence.
+
+The materials for this presentation are available on GitHub:
+
+.link https://github.com/davecheney/introduction-to-go
+
+You are encouraged to remix, transform, or build upon the material, providing you give appropriate credit and distribute your contributions under the same license.
+
+If you have suggestions or corrections to this presentation, please raise [[https://github.com/davecheney/introduction-to-go/isues][an issue on the GitHub project]].
+
+* Agenda
+
+- Advanced Syntax
+- The standard library
+- Packages and applications
+
+* Advanced Syntax
+
+* Advanced Syntax
+
+This section builds on the previous by exploring each of the things we learnt in a little more detail.
+
+In this section we'll use the Go Playground, a simple online code editor to perform our exercises.
+
+* Coding style
+
+All Go code is formatted according to a single style guide which is enforced with a tool called `gofmt`
+
+Having one single style that all Go code is formatted in improves readability and avoids the time wasted arguing about code formatting.
+
+"Gofmt's style is no one's favorite, yet gofmt is everyone's favorite."
+.caption [[https://go-proverbs.github.io/][Go Proverb]].
+
+The Go playground can format your code according to the canonical Go style.
+
+- Follow [[https://play.golang.org/p/0Hz57BQdTA][this link]] and press the *Format* button to see this in action.
+
+* Zero value
+
+In previous examples we've written code like this
+
+ var name = "go"
+ var counter = 1
+
+Which both _declares_ and _initalises_ the variables `counter` and `name` respectively. What happens if we have code like this?
+
+.code src/zerovalue/zerovalue1/main.go
+
+What will this print?
+
+- Follow [[https://play.golang.org/p/jioUB0t_LW][this link]] and press the *Run* button to see this in action.
+
+* Zero value (cont.)
+
+In Go, there is no unitialised memory. The Go runtime will always ensure that the memory allocated for each variable is initalised before use.
+
+If we write something like 
+
+ var name string
+ var counter int
+
+Then the memory assigned to the variables `name` and `counter` will be zeroed, as we have not provided an _initaliser_.
+
+- The value of `name` will be `""` because that is the value of a string with zero length.
+- The value of `counter` will be zero, because that is the value of an `int` if we wrote `0` to its memory location.
+
+* Zero value (cont.)
+
+Every type in Go has an associated _zero_value_. The value of that variable if we wrote zeros to its memory.
+
+- The zero value for integer types: `int`, `int8`, `uint`, `uint64`, etc, is `0`.
+- The zero value for floating point types: `float32`, `float64`, `complex128`, etc, is `0.0`.
+- The zero value for arrays is the zero value for each element, ie. `[3]int` is `0`, `0`, `0`.
+- The zero value for slices is `nil`.
+- The zero value for structs is the zero value for each field.
+
+* Equality
+
+As Go is a strongly typed language, for two variables to be equal, both their _type_and_their_value_ must be equal.
+
+Trying to compare two variables of _different_ types is detected at runtime.
+
+.code src/equality/equality1/main.go
+
+- Follow [[https://play.golang.org/p/LwiJm2xuXK][this link]] and press the *Run* button.
+- Fix the program by declaring `x` and `y` to be the _same_ type.
+
+* Type conversions
+
+Sometimes you have variables of different integer types, you can _convert_ from one type to another using a conversion _expression_.
+
+The expression `T(v)` converts the value `v` to the type `T`.
+
+.code -edit src/types/types2/main.go
+
+In this example the assignment of `y`=`x` fails because `x` and `y` are different integer types.
+
+- Follow [[https://play.golang.org/p/wvG41C0lH4][this link]] and press the *Run* button.
+- Fix the program by _converting_ `x` to an `int` with `int(x)`.
+
+* Type conversions (cont.)
+
+If you have variables of different _widths_, you can _convert_ from one type to another.
+
+.code -edit src/types/types3/main.go
+
+- Follow [[https://play.golang.org/p/l4Q48pWAla][this link]] and press the *Run* button.
+- Fix the program by _converting_ `x` to an `int64` with `int64(x)`.
+
+* Type conversions (cont.)
+
+We can do the opposite and convert a wider type to a narrower type.
+
+.code -edit src/types/types4/main.go
+
+- Follow [[https://play.golang.org/p/NbNwRjbmRu][this link]] and press the *Run* button. Does it print the answer you expected?
+- Fix the program by _declaring_ `y` as an `int32`.
+
+* Integer overflow
+
+Whenever you declare a variable in Go, you have to choose how many bits of memory it will consume.
+
+When you convert a variable with a _smaller_ number of bits to a variable with a larger number of bits, this is fine, because they all fit.
+
+When you convert a variable with a _larger_ number of bits to a variable with a smaller number of bits there is a risk of truncation, because there are less bits available to represent your number.
+
+- Follow [[https://play.golang.org/p/NbNwRjbmRu][this link]] and press the *Run* button. Does it print the answer you expected?
+- Fix the program by reducing the value of `x`. Hint: the value needs to be less than 33,000.
+
+* Short declaration syntax
+
+As you've probably noticed, Go has several ways to declare variables. All three of these are the same
+
+ var x = 0
+ var x int = 0
+ var x int
+
+If you've come from a language like Ruby or Python, you're probably wondering if this very common operation can be made more concise. Indeed it can.
+
+ x := 0
+
+This is what we call a _short_declaration_, which is the same as 
+ 
+ var x int = 0
+
+Short declaration is very common in Go programs, you'll see it everywhere, so let's do some exercises to familarise you with its use.
+
+* Short declaration syntax (cont.)
+
+A common use of the short declaration syntax is in `for` loops. Consider this program
+
+ var i int
+ for i = 1; i < 11; i++ {
+         fmt.Println(i)
+ }
+
+This can be also written as
+
+ for i := 1; i < 11; i++ {
+         fmt.Println(i)
+ }
+
+[[https://play.golang.org/p/3Vl75w72JO][This program]] contains two `var` declarations and two `for` loops.
+
+- Follow [[https://play.golang.org/p/3Vl75w72JO][this link]] and press the *Run* button.
+- Rewrite the program using the short declaration syntax; there should be no `var` declarations, only `:=`.
+
+* Slices
+
+The next kind of type to discuss is the _Slice_. 
+
+A slice is an ordered collection of values of a _single_ type.
+
+The syntax for declaring a slice variable is very similar to declaring a _scalar_ variable.
+
+ var i int      // an int called i
+ var j []int    // a slice of ints called j
+
+In this example, 
+
+- `i` is a variable of type `int`. 
+- `j` is a variable of type `[]int`, that is, a slice of `int`.
+
+Slices are very important in Go programs, so we'll spend a bit of time discussing them.
+
+_note_: A slice is _not_ an array. Go also supports arrays, but you'll see later than they aren't very common, or very easy to use, so we won't discuss them at the moment.
+
+* How large is a slice?
+
+If I declare a slice, `[]int`, how many items can it hold?
+
+The _zero_value_ of a slice is empty, that is, it has a _length_ of zero; it can hold 0 items.
+
+.code -edit src/slices/slices1/main.go
+
+We can retrieve the length of a slice with the built-in `len` function.
+
+- Follow [[https://play.golang.org/p/gZYvdE2zbT][this link]] and press the *Run* button.
+- Did you guess the right answer?
+
+* Making a slice
+
+We can create a slice with space to hold items using the built-in `make` function.
+
+.code -edit src/slices/slices2/main.go
+
+In this example, on the first line `var i []int` declares `i` to be a slice of `int`.
+
+On the second line, `i` is _assigned_ the result of `make([]int,`20)`.
+
+- Follow [[https://play.golang.org/p/i_IWqjik6u][this link]] and press the *Run* button.
+- Did `fmt.Println(len(i))` print the result you expected?
+
+* Making a slice (cont.)
+
+Because declaring a slice variable and initalising it with `make` is a common operation, it is common to see the _short_variable_declaration_ used to combine this operations.
+
+.code -edit src/slices/slices3/main.go
+
+This example declares `i` _and_ initalises it to be a slice of `int` with a length of 20.
+
+- Follow [[https://play.golang.org/p/b92SJ0Gx9s][this link]] and press the *Run* button.
+- Did `fmt.Println(len(i))` print the result you expected?
+
+* Slice exercises
+
+Let's do a quick exercise to familarise yourself with using slices.
+
+.code -edit src/slices/slices4/main.go
+
+- Follow [[https://play.golang.org/p/AJk1Jgp1iE][this link]] for instructions.
+- Declare a variable called `i` which is a slice of 5 `int`.
+- Declare a variable called `f` which is a slice of 9 `float64`.
+- Declare a variable called `s` which is a slice of 4 `string`.
+- Does your program print the expected result, `5`9`4`?
+
+* Index expressions
+
+To access, or assign, the contents of a slice element at index `i`, use the form `s[i]`.
+
+Slices are zero indexed, so `s[0]` is the 1st element, `s[1]` is the second element, and so on.
+
+When the _index_expression_ appears on the _left_hand_side_ of the equals operator, `=`
+
+ s[7] = 20
+
+We are assigning the number 20 to the 8'th element of the slice `s`.
+
+When the _index_expression_ appears on the _right_hand_side_ of the equals operator, `=`
+
+ x := s[7]
+
+We are assigning the value at the 8th element of `s` to the variable `x`.
+
+* Slice zero value
+
+We saw earlier that the _zero_value_ of the slice
+
+ var s []int
+
+was and empty slice, a slice with length of zero.
+
+What is the value of each of the elements of a newly created, with make, slice?
+
+.code -edit src/slices/slices5/main.go
+
+- Follow [[https://play.golang.org/p/kGh_C1l6KW][this link]] and press the *Run* button.
+- Did the program print the result you expected?
+
+* Slice initialisation
+
+We want to create an `[]int` slice of the first 10 prime numbers, how could we do this?
+
+One solution could be to create the slice and assign a value to each element in the slice.
+
+.code -edit src/slices/slices6/main.go
+
+* Slice initialisation (cont.)
+
+Doing this manually is verbose and boring; how would you do this for the first 50 primes?
+
+Go supports a method of assignment where we both _declare_ and _initalise_ the slice at once.
+
+.code -edit src/slices/slices7/main.go
+
+This is called the _composite_literal_ syntax.
+
+- Follow [[https://play.golang.org/p/P-eBqzPCWh][this link]] and complete the exercise.
+
+* append
+
+So far we've been using slices with a known length. You can extend the contents of a slice with the built-in `append` function.
+
+.code -edit src/slices/slices8/main.go
+
+`append` increases the length of the slice to accommodate the new items, then returns a new slice value.
+
+You can `append` multiple values in one statement, providing they are all the same type.
+
+.link https://blog.golang.org/slices Further reading: Arrays, slices (and strings): The mechanics of 'append' (blog.golang.org)
+
+* Subslices
+
+What if we have a large slice, and want to refer to only a part of it. 
+
+We call this slicing a slice, or _subslicing_.
+
+Subslicing looks similar to the _indexing_ operation we saw a few slide ago, except it refers to a range of slice indexes.
+
+.code -edit src/slices/slices12/main.go
+
+The expression `brothers[0:3]` evaluates to a slice of the 1st to 3rd Marx brother.
+
+- Follow [[https://play.golang.org/p/d1-jl42aTF][this link]] and complete the exercise.
+
+* Subslices (cont.)
+
+An important thing to remember when slicing a slice, is that both slices refer to the _same_ underying data.
+
+.code -edit src/slices/slices10/main.go
+
+To create two independent slice values, you would use the `copy` function, which we'll discuss later.
+
+* Bounds checking
+
+Each slice has a length which is decided when it is made.
+
+You can increase the length of the slice with the `append` function, and create a smaller slice from a larger one using the slice operator.
+
+What happens if you accidentally exceed the bounds of the slice?
+
+.code -edit src/slices/slices11/main.go
+
+- Follow [[https://play.golang.org/p/mIWm0a1amp][this link]] and press the *Run* button.
+- Comment out `fmt.Println(primes[-1])` and see what happens.
+
+* Multiple assignment
+
+Go allows you to perform multiple assignments and declarations in one statement.
+
+For example, if we wanted to declare, `x`, `y`, and `z`, with the values `1`, `2`, and `3` respectively. We could write
+
+ var x = 1
+ var y = 2
+ var z = 3
+
+We can write the same thing like this
+
+ var x, y, z = 1, 2, 3
+
+- Follow [[https://play.golang.org/p/d2hDJQAfkt][this link]] for some examples of multiple declaration.
+
+* Multiple return values
+
+Multiple assignment is important to understand because you can return multiple values from a function.
+
+ func f(i int)
+
+This is a function declaration for `f` which takes one argument, an `int`.
+
+ func g(i int, j int, k string) int
+
+This is a function declaration for `g`, which takes three arguments, two `int` s and a `string`, and returns an `int`.
+
+ func h(i, j int) (int, int, string)
+
+This is a function declaration for `h`, which takes two arguments, two `ints`, and returns three values, two `int` s and a `string`.
+
+* Multiple return values (cont.)
+
+Your program must return the number of values specified in the function signature.
+
+.code -edit src/functions/functions4/main.go
+
+* Assigning multiple return values
+
+When you call a function that returns multiple values, you must assign _all_ of them or _none_ of them.
+
+ func f() (int, bool, string)
+
+ func main() {
+         a, b, c := f()
+         fmt.Println(a, b, c)
+ }
+
+`f` returns three values, so we assign them to `a`, `b`, and `c` using the short declaration syntax.
+
+If we wanted to use only the first and third values we can ignore the second by assigning it to the underscore variable, `_`.
+
+ func main() {
+         a, _, c := f()
+         fmt.Println(a, c)
+ }
+
+* Maps
+
+Go has a built in Hash Map type, called a `map`.
+
+Maps map values of key type K to values of type V
+
+ var m map[string]int
+
+Just like making a slice, making a map is accomplished with the `make` built-in.
+
+.code -edit src/maps/maps1/main.go
+
+* Inserting values into a map
+
+Inserting a value into a map looks similar to assigning a value to a slice element.
+
+.code -edit src/maps/maps2/main.go
+
+If an entry already exits with that key, it will be overwritten.
+
+- Follow [[https://play.golang.org/p/a-V5I0nZ5l][this link]] and complete the exercise.
+
+_note_: maps are always _unordered_.
+
+* Compact literal initalisation
+
+Just like slices, maps support compact literal initalisation, which declares and initalises the map.
+
+.code -edit src/maps/maps3/main.go
+
+* Retrieving a values from a map
+
+Just like a slice, you can retrieve the value stored in a map with the syntax `m[key]`.
+
+If it is present the value will be returned, if not the _zero_value_ will be returned.
+
+.code -edit src/maps/maps4/main.go
+
+* Checking if a map value exists
+
+In the previous slide we saw that `moons["Neptune"]` returned `0`.
+
+How can we tell if Neptune actually has no moons, or if `0` was returned because there is no entry for Neptune?
+
+Map look ups support a second syntax.
+
+.code -edit src/maps/maps5/main.go
+
+* Deleting a value from a map
+
+To delete a value from a map, you use the built in `delete` function.
+
+.code -edit src/maps/maps6/main.go
+
+* Iterating over a map
+
+If we wanted to print out all the values in a map we can use a form of the `for` syntax which is known as `range`.
+
+.code -edit src/range/range1/main.go
+
+`range` loops over each entry in the map, assigning the map key to `name`, and the map value to `pop`.
+
+* Range over slices
+
+We say previously that `for`range` works with maps, it also works with slices.
+
+.code -edit src/range/range2/main.go
+
+- Follow [[https://play.golang.org/p/AmQW-OrPC1][this link]] and complete the exercise.
+- If you cannot figure it out, don't worry, there is an answer on the next slide.
+
+* Switch
+
+If you completed the previous exercise you may have written something like this
+
+.code -edit src/range/range2a/main.go /START OMIT/,/END OMIT/
+
+Heavily nested `if`else`if` blocks are discouraged in Go.
+
+Instead we can use the other condition statement, `switch`.
+
+* Switch (cont.)
+
+`switch` can be used 
+
+.code -edit src/switch/switch1/main.go /START OMIT/,/END OMIT/
+
+* fmt
+
+Let's conclude this section by talking about the fmt package.
+
+`fmt` standard for formatted printing; the name is inherited from Go's Plan 9 legacy.
+
+We've use `fmt.Println` a lot up to this point, but the `fmt` package has many other useful functions.
+
+We'll focus on `fmt.Printf`, the `f` stands for _formatted_output_.
+
+Here is an example.
+
+.code -edit src/fmt/fmt1/main.go /START OMIT/,/END OMIT/
+
+- Follow [[https://play.golang.org/p/UuzPWcwDrE][this link]] to experiment.
+
+* Formatting verbs
+
+If you're used to languages like Python or C, you're probably used to the idea of _formatting_verbs_.
+
+The `fmt` package supports a large number of formatting verbs and modifiers. In the previous example you saw `%s` and `%d`, for `string` and `int` respectively.
+
+The `fmt` package is smart enough to spot when you use the wrong formatting verb, or don't provide enough arguments to `fmt.Printf`.
+
+.code -edit src/fmt/fmt2/main.go /START OMIT/,/END OMIT/
+
+* Formatting verbs (cont.)
+
+Having to choose the correct verb that matches the type of the value you want to print is boring.
+
+To make it easier to use `fmt.Printf` in the simple case, you can use the `%v` verb, which know how to print _any_ value.
+
+.code -edit src/fmt/fmt3/main.go /START OMIT/,/END OMIT/
+
+- Follow [[https://play.golang.org/p/B-E7JOJ1Db][this link]] to experiment with a few more formatting verbs.
+
+* Recap
+
+Now you know most of Go!
+
+You've learnt:
+
+- How Go code is formatted.
+- How what the zero value is and how it works.
+- Equality and type conversions
+- The short declaration syntax
+- Multiple assignment.
+- How slices work.
+- How maps work.
+- How the `fmt` package works.
+
+Time for lunch!
+
+* Testing
+
+I wanted to spend some time on testing because for the rest of the day we'll be using tests to complete code exercises.
+
+The testing package can also contain benchmark functions and examples, which show up in godoc.
+
+You should include tests for each package that you write.
+
+The `testing` package is ideal for _unit_tests_. It's _ok_ for functional tests, but not really suitable for complex integration tests.
+
+* go test
+
+`go`test` is the unit testing framework built into the Go standard library. It lives in the `testing` package.
+
+Tests live in `_test.go` files, eg. the `strings` package has these files:
+
+- `strings.go` functions to manipulate UTF-8 encoded strings.
+- `strings_test.go` tests for the `strings` package.
+
+Each test is a function in the form
+
+ func TestNameOfTest(t *testing.T) { ... }
+
+- `NameOfTest` is the name of your test, it _must_ start with an upper case letter.
+- Test functions take a `testing.T` value, which provides helpers like `t.Error` and `t.Fail`.
+
+* Writing tests
+
+Let's write some tests using our own version of the strings package, called `simplestrings`.
+
+- The code for this exercise is in `$GOPATH/src/simplestrings/`
+- Read the source code for `simplestrings.go`
+
+Together we'll write some tests for the functions in our `simplestrings` package.
+
+We'll use the test coverage (see next slide) tool to check our work.
+
+* Test coverage
+
+`go`test` can report coverage
+
+ go test -coverprofile=cover.out
+
+This produces a coverage file, `cover.out`
+
+- `go`tool`cover`-func=cover.out` will print the coverage report
+- `go`tool`cover`-html=cover.out` will open the report in a browser
+
+_Protip_: I use these little shell functions to make this easier
+
+ cover () {
+   t=$(mktemp -t cover)
+   go test $COVERFLAGS -coverprofile=$t $@ && go tool cover -func=$t && unlink $t
+ }
+
+ cover-web() {
+   t=$(mktemp -t cover)
+   go test $COVERFLAGS -coverprofile=$t $@ && go tool cover -html=$t && unlink $t
+ }
+
+* The standard library
+
+Go ships with a rich standard library of packages. This includes
+
+- file input / output
+- string handling
+- compression
+- encoding and decoding of JSON and XML
+- network handling
+- HTTP client and server
+
+* String formatting
+
+As a warm up, let's do a small exercise together. 
+
+The code for this exercise is in `$GOPATH/src/exercises/sprintf`
+
+If you get stuck, the answers are in `$GOPATH/src/exercises/sprintf/answers_test.go`.
+
+* Structs
+
+So far we've discussed two kinds of types; _primitive_ types and _slice_ types.
+
+Go supports what we call _compound_ types, that is, types that are _composed_ of other types. 
+
+These are called _struct_ (for _structure_) types. We declare a struct like this:
+
+ type Point struct {
+          X int
+          Y int
+ }
+
+`Point` is a position in two dimensional space, it has two fields, `X` and `Y`.
+
+- Follow [[https://play.golang.org/p/fAnPV1MojK][this link]] to complete the example
+
+* Methods
+
+To this point we've talked about functions, which belong to a package
+
+ // Max returns the larger of a or b.
+ func Max(a, b int) int
+
+In Go, you can attach a function to a type that you declare, this is called a _method_.
+
+ type Point struct { X, Y int }
+
+ func (p Point) String() string {
+          return fmt.Sprintf("point: x=%d, y=%d", p.X, p.Y)
+ }
+
+Any type that implements a `String()`string` method will be used by the `fmt` package when it prints the value.
+
+- Complete the exercise in `$GOPATH/src/exercises/methods` by making all the tests pass.
+
+* Pointers
+
+Whenever you pass a value to a function or method, the value is _copied_.
+
+In Go, the method's receiver is also a value, so it's copied when you call a method.
+
+.code -edit src/pointers/pointers1.go /START OMIT/,/END OMIT/
+
+- Complete the exercise in `$GOPATH/src/exercises/pointers` by making the test pass.
+
+* Interfaces
+
+Go is an object oriented language; we have methods on types, but Go does not support inheritance or sub-classes.
+
+Go supports polymorphism, _has_a_ (not _is_a_) with _interfaces_.
+
+An interface declaration looks like this:
+
+ type Reader interface { 
+          Read(buf []byte) (int, error) 
+ }
+
+This is the [[https://golang.org/pkg/io/#Reader][`io.Reader`]] interface declaration from the [[https://golang.org/pkg/io/][`io`]] package.
+
+Go does not have an _implements_ keyword, any type with the correct set of methods _is_ an implementation of the interface.
+
+* Reading input
+
+This exercise asks you to write a function that reads lines from an io.Reader and returns a string containing all the lines read.
+
+The code for this exercise is in `$GOPATH/src/exercises/input`
+
+* Readers
+
+To familarise you with the `io.Reader` implementations available in the `io` package, this exercise is all about Readers.
+
+- Complete the exercise in `$GOPATH/src/exercises/readers` by making the test pass.
+- If you get stuck, consult the documentation in the [[https://golang.org/pkg/io/][`io`]] package.
+
+* Error handling
+
+You probably spotted that lots of methods and functions in the Go standard library return a value of type `error`. 
+
+`error` is a _predeclared_type_, just like `int`, `string`, etc.
+
+`error` is an interface, it's declaration is
+
+ type error interface {
+         Error() string
+ }
+
+Any type that has an `Error()`string` method, _implements_ the `error` interface.         
+
+* Nil
+
+`nil` is Go's version of `NULL`, `null`, `void`.
+
+- The zero value of an interface type is `nil`.
+- The zero value of a pointer type is `nil`.
+
+Go uses the `error` interface and a simple convention to implement error handling.
+
+- If no error occurs, the `err` value returned from a function or method will equal nil.
+- If an error occurs, the `err` value returned from a function or method will not equal nil.
+
+ if err != nil {
+          // cleanup and handle error
+ }
+
+* Counting the number of lines in a file
+
+Now we know about `io.Reader`'s, `error`'s, we can write some more useful programs.
+
+The code for this exercise is in `$GOPATH/src/exercises/countlines`
+
+_Note_:
+
+- `go`test` always executes from the package's source directory, this makes it simple to include fixtures for your tests.
+- The go tool ignores any directory called `testdata`, or starts with a `.` or `_`.
+
+* defer
+
+In `CountLines` from our previous example, if an error happened during reading lines, `f` may not be closed.
+
+Go has a keyword `defer` to ensure operations _always_ happen.
+
+.code -edit src/defer/defer1.go /START OMIT/,/END OMIT/
+
+* Error handling (cont.)
+
+In the previous counting example, if an error happened, the program would exit.
+
+In this exercise, we'll handle errors by returning them to the caller.
+
+The code for this exercise is in `$GOPATH/src/exercises/errorhandling`
+
+* Passing in a reader
+
+Let's turn out `Countlines` function into a program.
+
+The code for this exercise is in `$GOPATH/src/exercises/linecount`
+
+Complete the program so it reads the number of lines sent to it via stdin.
+
+ % cat testdata/moby.txt | ./linecount 
+ 22659
+
+* Handling multiple files
+
+Let's extend our `linecount` program to handle files passed on the command line.
+
+The code for this exercise is in `$GOPATH/src/exercises/countmanyfiles`
+
+Complete the program so it counts the lines in files passed via the command line.
+
+ % ./countmanyfiles testdata/*.txt
+ testdata/dracula.txt    15973
+ testdata/pride-and-prejudice.txt        13427
+ testdata/sherlock.txt   13052
+
+* Reading all the *.txt files in a directory
+
+In the previous example we used the shell to list files to process.
+
+In this exercise, let's extend our `countmanyfiles` program to walk the directory listing itself.
+
+To do this we use the [[https://golang.org/pkg/os/#File.Readdir][`ReadDir`]] method on [[https://golang.org/pkg/os/#File][`os.File`]].
+
+_Note_: Be careful to only read _files_, not directories, and do not read files that don't end in `.txt`
+
+The code for this exercise is in `$GOPATH/src/exercises/countdir`
+
+Complete the program so it counts the lines in files passed via the command line.
+
+ % ./countdir testdata/
+ testdata/christmas-carol.txt    4236
+ testdata/tom-sawyer.txt 9209
+
+* HTTP request
+
+The Go standard library supports writing HTTP clients and servers with the [[https://golang.org/pkg/net/http/][`net/http`]] package.
+
+Using the `net/http` package is very straight forward:
+
+ resp, err := http.Get("http://example.com/")
+ if err != nil {
+         // handle error
+ }
+ 
+`resp` is a [[https://golang.org/pkg/net/http/#Response][`http.Response`]] structure, which has lots of interesting fields.
+
+Let's write a simple HTTP client that can fetch HTTP URLs.
+
+ % ./httpget http://httpbin.org/ip
+ {
+   "origin": "125.203.122.114"
+ }
+
+The code for this exercise is in `$GOPATH/src/exercises/httpget`
+
+* JSON parsing
+
+The service at `http://httpbin.org/` returns JSON bodies.
+
+The [[https://golang.org/pkg/encoding/json/][`encoding/json`]] package can decode JSON data into a map.
+
+ result := make(map[string]string)
+ dec := json.NewDecoder(resp.Body)
+ err := dec.Decode(&result)
+ if err != nil {
+         // handle error
+ }
+
+Let's use this to write a program that will tell us our public IP address.
+
+ % ./whatismyip 
+ My IP address is: 125.203.122.114
+
+The code for this exercise is in `$GOPATH/src/exercises/whatismyip`
+
+* JSON encoding
+
+If you're writing a RESTful web service it's common to have to return JSON encoded data.
+
+In Go the [[https://godoc.org/encoding/json][`encoding/json`]] package can turn Go maps and data structures into JSON.
+
+.code -edit src/jsonenc/jsonenc1.go /START OMIT/,/END OMIT/
+
+* Controlling JSON encoding
+
+The `encoding/json` package requires the fields of a struct to be public (start with an upper case letter), this means the keys in your JSON document will be upper case.
+
+We can fix this and control the output of the JSON with a _tag_.
+
+The format of the JSON tag is documented on the [[https://golang.org/pkg/encoding/json/#Marshal][`json.Encode`]] method.
+
+.code -edit src/jsonenc/jsonenc2.go /START OMIT/,/END OMIT/
+
+* JSON encoding exercise
+
+The code for this exercise is in `$GOPATH/src/exercises/jsonenc`
+
+* Writing HTTP servers
+
+Go's [[https://golang.org/pkg/net/http][`net/http`]] library can be used to write production web applications.
+
+Writing web servers in Go can be as simple as a few lines. Here is an example:
+
+.code -edit src/http/http1.go
+
+* Writing http servers (cont.)
+
+This is a simple HTTP handler
+
+ func index(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintln(w, "This is the index page")
+ }
+
+it takes two parameters
+
+- `w`, a `http.ResponseWriter` which is used to send data to the client
+- `r`, a `http.Request` which contains the uri, query parameters, and request body.
+
+ mux := http.NewServeMux()
+
+`http.NewServeMux` returns a `ServeMux`, what we usually call a HTTP router.
+ 
+* Writing http servers (cont.)
+
+ mux.HandleFunc("/", index)
+
+Registers our `index` function, with the top level route, `"/"`.
+
+ http.ListenAndServe(":8000", mux)
+
+Opens a socket on port 8080 and sends and requests to our `mux` (our router).
+
+`http.ListenAndServe` won't return unless something happens to that listening socket (wifi drops, cable unplugs)
+
+* go get
+
+`go`get` is a simple wrapper around `git` that knows how fetch packages from GitHub (and a few other places).
+
+If a package's import path follows the `go`get` convention, `go`get` knows how to fetch the source code and download it to your `$GOPATH`.
+
+`go`get` isn't a complete dependency manager like rubygems or npm, etc, but it good enough for writing many applications.
+
+We'll use `go`get` to fetch the source for `gorilla/mux`, a more advanced HTTP router
+
+ % go get github.com/gorilla/mux 
+ % ls $GOPATH/src/github.com/gorilla/mux
+ LICENSE                 context_gorilla.go      context_native_test.go  mux_test.go
+ README.md               context_gorilla_test.go doc.go                  old_test.go
+ bench_test.go           context_native.go       mux.go                  regexp.go
+ route.go
+
+* Using gorilla/mux
+
+The standard HTTP router, `http.ServeMux` is quite basic, so we'll upgrade to the `gorilla/mux` http router.
+
+.code -edit src/http/http2.go
+
+* Line counting HTTP service
+
+Let's write a HTTP service that counts the lines in a book via http.
+
+Features:
+
+- When the client requests `/books/{book}` we look up the book and return the number of lines counted.
+- The response to the client should be in JSON format and include the number of lines and the title of the book.
+- Book directory is configurable.
+
+ % ./httplinecount ../../../books/ &
+ [1] 17554
+ % curl http://localhost:8080/books/moby.txt
+ {"title":"moby.txt","lines":"22659"}
+
+The code for this exercise is in `$GOPATH/src/exercises/httplinecount`
+
+* Documenting packages with comments
+
+Go code is traditionally documented with comments in the source code. This is similar to Python's heredoc convention.
+
+Here are some examples
+
+ // simplestrings provides simple helper functions to work with strings
+ package simplestrings
+
+ // APIVersion is the version of this package's API
+ const APIVersion = 3
+
+ // NextID returns the next ID in the sequence
+ func NextID() uint64 { ... }
+
+_Notes_
+
+- Comments directly precede the thing they apply to, don't put an extra newline in between the comment and the symbol
+- You should comment both Public and private symbols, but godoc will only show you the documents
+
+* Scope
+
+We've talked about all the ways to declare a variable in Go, now we need to discuss scope.
+
+.code -edit src/scope/scope1/main.go
+
+This program declares `x` four times. All four `x` 's are _different_ because they exist in different scopes.
+
+- Follow [[https://play.golang.org/p/nIcOXVXgwl][this link]] and press the *Run* button.
+
+* Scope (cont.)
+
+The scope of a declaration is bound to the closest pair of curly braces, `{` and `}`.
+
+.code -edit src/scope/scope2/main.go
+
+In this example, we declare `x` to be 100 inside `main`, and 200 inside `f`.
+
+- Follow [[https://play.golang.org/p/Xfi3GOhTiC][this link]] and press the *Run* button.
+- Did the program print what you expected?
+
+* Scope (cont.)
+
+What do you expect this program will print?
+
+.code -edit src/scope/scope3/main.go
+
+- Follow [[https://play.golang.org/p/7uxrebFzmK][this link]] and press the *Run* button.
+- Did you guess the right answer?
+
+* Scope (cont.)
+
+What do you expect this program will print?
+
+.code -edit src/scope/scope4/main.go
+
+- Follow [[https://play.golang.org/p/7hpZre9LhI][this link]] and press the *Run* button.
+- Did you guess the right answer?
+
+* Shadowing
+
+What you are seeing is called _shadowing_.
+
+.code -edit src/scope/scope5/main.go /START1 OMIT/,/END1 OMIT/
+
+Most of you will be comfortable with a _function_scoped_ variable shadowing a _package_scoped_ variable.
+
+.code -edit src/scope/scope5/main.go /START2 OMIT/,/END2 OMIT/
+
+But a _block_scoped_ variable shadowing a _function_scoped_ variable may be surprising.
+
+* Practice
+
+[Task List] (task-list.md)
+
+* Question time
+
+* Resources
+
+I would like to recommend several online resources:
+
+.link https://github.com/golang/go/wiki/CodeReviewComments Go Code Review Comments
+
+.link https://dave.cheney.net/resources-for-new-go-programmers Resources for new Go programmers
+.link https://golang.org/doc/code.html How to Write Go Code
+.link https://tour.golang.org/welcome/1 tour.golang.org
+.link https://golang.org/doc/effective_go.html Effective Go
+.link https://gobyexample.com/ Go by Example
+.link http://www.goin5minutes.com/ Go in 5 minutes
+.link https://miek.nl/go/ LEARNING GO online book
+.link https://habrahabr.ru/hub/go/ Habrahabr

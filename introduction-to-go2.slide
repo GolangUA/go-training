@@ -1013,7 +1013,7 @@ But a _block_scoped_ variable shadowing a _function_scoped_ variable may be surp
 
 * Practice
 
-[Task List] (task-list.md)
+[[https://github.com/GolangUA/go-training/blob/master/task-list.md][Task List]]
 
 * Question time
 

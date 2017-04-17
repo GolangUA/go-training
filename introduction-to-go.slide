@@ -1,0 +1,748 @@
+Introduction to Go (Part 1)
+Internal SoftServe Golang Training
+18 Apr 2017
+
+Ivan Kutuzov
+ikut@softserveinc.com
+https://discuss.7insyde.com
+https://golang.org.ua
+@arbrix
+
+* License and Materials
+
+Dave Cheney is the original author of all this materials
+
+This presentation is licensed under the [[https://creativecommons.org/licenses/by-sa/4.0/][Creative Commons Attribution-ShareAlike 4.0 International]] licence.
+
+The materials for this presentation are available on GitHub:
+
+.link https://github.com/davecheney/introduction-to-go
+
+You are encouraged to remix, transform, or build upon the material, providing you give appropriate credit and distribute your contributions under the same license.
+
+If you have suggestions or corrections to this presentation, please raise [[https://github.com/davecheney/introduction-to-go/isues][an issue on the GitHub project]].
+
+* Agenda
+
+- Golang
+- Development environment and tooling
+- Basic Syntax
+
+* The Go programming language
+
+- Modern
+- Compact, concise, general-purpose
+- Imperative, statically type-checked, dynamically type-safe
+- Garbage-collected
+- Compiles to native code, statically linked
+- Fast compilation, efficient execution
+
+Designed by programmers for programmers!
+
+.link https://talks.golang.org/2014/taste.slide#2 Source: Robert Griesemer, A Taste of Go.
+
+* Speed
+
+Go is often noted for its fast compilation, but this is only one facet of the idea of Go being a _fast_ language to program in.
+
+"False dichotomy of static languages being 'slow and painful' and dynamic languages being 'fast and fun'" -Rob Pike
+
+"Clumsy type systems drive people to dynamically typed languages" -Robert Griesemer
+
+Go is an attempt to demonstrate that a language can be both fast in terms of the programs it produces and fast (productive?) for the programmers.
+
+* Safety
+
+- Typed, and type safe
+
+ var i int = -1
+ var u uint = 200
+ i = u   // nope, incompatible types
+
+- Array accesses are bounds checked
+
+ s := make([]string, 10)
+ x := s[20] // will panic at runtime
+
+- All memory is zeroed if not explicitly initialised
+
+ var q int       // initialised to 0
+ var f = 7       // initialised to 7, type defaults to int
+
+- No implicit conversions; booleans and integers are not aliases
+
+ i := 2
+ if i { ... }    // nope, no coercion to bool
+
+* Good support for concurrency and communication
+
+- Multicore CPUs are a reality.
+- Multiprocessing is not a solution.
+- Networking support baked into the standard library, integrated into the runtime.
+
+* Garbage collected
+
+Go is a garbage collected language.
+
+- Eliminates the bookkeeping errors related to ownership of shared values.
+- Eliminates an entire class of use after free and memory leak bugs.
+- Enables simpler, cleaner, APIs.
+
+The garbage collector handles heaps into the 100's of GB range, and is designed for extremely low "stop the world" pauses.
+
+In Go 1.7 these pauses are now less than 100 microseconds.
+
+* Opinionated
+
+Go is an opinionated language.
+
+- Unused local variables are an error.
+- Unused imports are also an error.
+- The compiler does not issue warnings, only errors.
+- A single way to format code as defined by `go`fmt`.
+
+* Hello, http!
+
+.code -edit src/hellohttp/hellohttp.go
+
+* Development environment and tooling
+
+* Development environment and tooling
+
+This section focuses on the developer experience
+
+- Installing Go.
+- Setting up a `$GOPATH` workspace.
+- Introduction to the `go` command.
+- Writing unit tests with the go test command.
+
+* Installing Go
+
+The next few slides give examples of how to install Go on various systems.
+
+The official installation documentation is here:
+
+.link https://golang.org/doc/install
+
+The current version of Go is 1.7.4.
+
+- New minor releases, Go 1.8, Go 1.9, etc, ship twice a year. 
+- Historically 2–4 bug fix or security releases occur during each six month period.
+
+* Installing Go on OS X
+
+Installing Go on OS X (also known as `darwin`) can be accomplished with
+
+*Mac*OS*Installer*
+
+The Go project provides an `.pkg` installer, use:
+
+.link https://storage.googleapis.com/golang/go1.7.4.darwin-amd64.pkg
+
+*Homebrew*
+
+If you use Homebrew to manage third party software on your Mac, use:
+
+ brew install golang
+
+*MacPorts*
+
+If you use MacPorts to manage third party software on your Mac, use:
+
+ sudo port install go
+
+* Installing Go on Windows
+
+*MSI*Installer*
+
+The Go project provides a `.msi` installer for 32bit and 64bit Windows, use:
+
+.link https://storage.googleapis.com/golang/go1.7.4.windows-amd64.msi Windows 64bit MSI installer
+.link https://storage.googleapis.com/golang/go1.7.4.windows-386.msi Windows 32bit MSI installer
+
+*.zip*file*
+
+The Go project provides a `.zip` file of the Go compiler and standard library, use:
+
+.link https://storage.googleapis.com/golang/go1.7.4.windows-amd64.zip Windows 64bit zip file
+.link https://storage.googleapis.com/golang/go1.7.4.windows-386.zip Windows 32bit zip file
+
+Unzip the zip file and place it at `C:\Go`.
+
+* Installing Go on Linux
+
+Depending on your Linux distribution they may have an up to date version of Go, but this is rare.
+
+The most reliable way to install the latest version of Go is to untar
+
+.link https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz
+
+to the directory
+
+ /usr/local
+
+and add 
+ 
+ /usr/local/go/bin
+
+to your `$PATH`.
+
+ echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bash_profile
+
+* Go tool
+
+Your Go installation comes with a tool we call the `go` tool, because that's its name.
+
+The `go` tool can 
+
+- compile your programs
+- run your tests
+- display documentation for a package
+- fetch packages from the internet.
+
+* $GOPATH
+
+The `go` tool works inside a workspace where _all_ your Go source code is stored.
+
+All the source code for this workshop is included with this repository.
+
+You can set `$GOPATH` to be the base directory where you checked out this repository. eg.
+
+ % export GOPATH=$HOME/introduction-to-go
+
+Using a workspace allows you to import code from other packages with a fixed name. eg.
+
+ import "github.com/pkg/profile"
+
+Will import the code for the `profile` package stored in
+
+ $GOPATH/src/github.com/pkg/profile
+
+* Basic Syntax
+
+* Basic Syntax 
+
+In this section we will walk through the basic syntax of a short Go program.
+
+For this section all the code exercises will be inside this slide deck itself.
+
+At the end of this section you'll know:
+
+- How to declare constants and variables
+- How to write `for` loops and use `if`.
+- How types work.
+- How to write your own functions.
+- How packages and `import` statements work.
+
+* Constants
+
+A good place to start talking about Go are _Constants_.
+
+Constants are values that do not change.
+
+Here are some examples of constants:
+
+ 1
+ "hello"
+ false
+ 1.3
+
+These are called _literal_constants_ because the value of evaluating each of these is the constant itself.
+
+* Types of constants
+
+There are six kinds of constants
+
+- integer constants: `1`, `0`, `-6`, `9999999999999999999`, …
+- floating point constants: `3.14`, `7.5e-2`, …
+- complex number constants (rare): `1`-`0.707i`, …
+- string constants: `"Hello,`東京"`, … 
+- rune constants: `'a'`, `'す'`, `'シ'`, `'1'`, …
+- boolean constants: `true`, `false`
+
+* const
+
+To make a constant, we declare one with the `const` keyword.
+
+.code -edit src/const/const1/main.go /START OMIT/,/END OMIT/
+
+* Identifiers
+
+This is a good time to talk about _identifiers_.
+
+An identifier is a name your give to something in your code.
+
+In Go an identifier is any word that starts with a _letter_.
+
+.code -edit src/identifier/identifier1/main.go /START OMIT/,/END OMIT/
+
+A letter is anything that Unicode defines to be a letter, this includes Kanji, Cyrillic, Latin, etc.
+
+* Identifiers (cont.)
+
+An identifier must start with a Unicode letter, or the underscore character, `_`.
+
+Numbers are not permitted at the start of an identifier, but can appear later in the identifier.
+
+.code -edit src/identifier/identifier2/main.go /START OMIT/,/END OMIT/
+
+Here are some examples of _invalid_ identifiers.
+
+* Comments
+
+Go supports two kinds of comments:
+
+- Inline comments, which start with a double forward slash, `//`.
+- Block comments, which start with a forward slash and a star, `/*`, and end with a star and forward slash, `*/`.
+
+.code -edit src/comments/comments1/main.go /START OMIT/,/END OMIT/
+
+Code that is commented out will not be compiled or run.
+
+* Declarations
+
+There are six kinds of _declarations_ in Go, we've seen one of them already.
+
+They are:
+
+- `const`: declares a new constant.
+- `var`: declares a new variable.
+- `type`: declares a new type.
+- `func`: declares a new function, or method.
+- `package`: declares the package this `.go` source file belongs to.
+- `import`: declares that this package imports declarations from another. 
+
+We'll cover each of the remaining five declarations in this section.
+
+* Variables
+
+A variable holds a value that can be changed over time.
+
+You _declare_ a new variable with the `var` declaration.
+
+.code -edit src/variable/variable1/main.go /START OMIT/,/END OMIT/
+
+Just like constants, variable _identifiers_ can be any any valid Unicode word.
+
+_note_: The circumference is printed in scientific notation 😕, that's ok, we'll talk about how to fix it later when we talk about the `fmt` package.
+
+* Unused variable declarations
+
+Unused variables are often the source of bugs. If you declare a variable in the scope of your function but do not use it, the Go compiler will complain.
+
+If the variable is unused, you should delete it, or assign it temporarily to the magic variable called `_`.
+
+.code -edit src/variable/variable2/main.go /START OMIT/,/END OMIT/
+
+This program has four unused variables.
+
+- Fix the program by removing the comment from the two lines at the bottom.
+- Delete, or comment out, the declaration of `自転車` as it is unused.
+
+* Statements
+
+A _statement_ is a command to do something:
+
+- _Declare_a_new_integer_variable_x_and_assign_it_the_value_10_.
+- _Add_4_to_the_value_of_x_and_store_the_result_in_y_.
+- _While_x_less_than_20_perform_these_statements_.
+
+There are several kinds of statements in Go, we've seen a few already. The most common statements are:
+
+- Declarations: `const`pi`=`3.14159265359`, `type`Counter`int32`, …
+- Assignments: `count`=`count`+`1`, …
+- Increment/Decrement: `x++`, `y--`
+- Conditionals: `if`…`{`…`}`else`{`…`}`, `switch`{`…`}`
+- Loops: `for`…`{`…`}`
+- Control flow: `break`, `fallthrough`, `continue`, `goto`, `return`.
+
+* Assignment
+
+It is common that you need to change the value stored in a variable, this is called _Assignment_.
+
+.code -edit src/assignment/assignment1/main.go /START OMIT/,/END OMIT/
+
+In this example, we declare
+
+- Check that program prints, `1`, `2`, `4`.
+# - Update the program to declare a new variable, `z`, which has a value 2x larger than `y`.
+
+* Assignment (cont.)
+
+You can only assign a new value to _variables_.
+
+.code -edit src/assignment/assignment2/main.go /START OMIT/,/END OMIT/
+
+It is a syntax error to assign a new value to a constant.
+
+- Edit the sample code to change the declaration of `x` from a constant (`const`) to a variable (`var`).
+
+* Increment and decrement
+
+Go supports a limited form of variable post-increment and post-decrement, ie. `x++`, `x--`.
+
+.code -edit src/increment/increment1/main.go /START OMIT/,/END OMIT/
+
+- Edit the sample code to subtract `1` from `i` using the decrement operator `i--`.
+
+* Increment and decrement (cont.)
+
+`i++` and `i--` are _statements_, not an _expressions_, they do not produce a value.
+
+.code -edit src/increment/increment2/main.go /START OMIT/,/END OMIT/
+
+This program has a syntax error. 
+
+- Edit the sample code to correct the error by moving the `i++` statement above the declaration of `var`j`.
+
+* Looping
+
+Go has a single `for` loop construct that combines
+
+- `while` _condition_ `{`…`}`
+- `do`{`…`}`while` _condition_
+- `do`{`…`}`until` _condition_
+
+into one syntax.
+
+- `for` _(init_statement)_; _condition_; _(post_statement)_ `{`…`}`
+
+The parts of a `for` statement are:
+
+- init statement: used to initalise the loop variable; `i`=`0`.
+- condition: user to test if the loop is done; `i`<`10`, `true` means keep looping.
+- post statement: user to increment the loop variable; `i++`, `i`=`i`-`1`.
+
+* Looping (cont.) 
+
+Let's practice using loops.
+
+.code -edit src/loops/loops1/main.go /START OMIT/,/END OMIT/
+
+This program counts from `1` to `10`, can you make it print only the _even_ numbers.
+
+- Edit the program to make it print only the even numbers between `1` and `10`, inclusive.
+
+_note_: you do not need to put `(` braces around the `for` condition `)`. In fact, if you do it's a syntax error. Try it.
+
+* Looping (cont.) 
+
+Let's practice counting down, this is where you would use a `while` loop in other languages.
+
+.code -edit src/loops/loops2/main.go /START OMIT/,/END OMIT/
+
+This program counts down from `10` to `1`, can you make it count from `7` to `3`.
+
+- Edit the program to make it print only the numbers from `7` down to `3`.
+
+_note_: this `for` loop only has a _condition_, there is no _init_statement_ or _post_statement_, so we can omit the semicolons, `;`.
+
+* Conditional statements
+
+Go has two conditional statements, `if` and `switch`.
+
+`if` is used to choose between two choices based on a _condition_.
+
+ if v > 0 {
+         println("v is greater than zero")
+ } else {
+         println("v is less than or equal to zero")
+ }
+
+In some cases the body of the `else` block may be omitted. This is very common when checking preconditions in a method of a function.
+
+ if v == 0 {
+         // nothing to do
+         return
+ }
+ // handle v
+
+* if
+
+Let's revisit our previous even numbers `for` loop example.
+
+.code -edit src/conditionals/conditionals1/main.go /START OMIT/,/END OMIT/
+
+This program counts from `1` to `10`, can you make it print only the _even_ numbers.
+
+- Uncomment the `if`i%2`==`0`{` and `}` lines to make the program print only the even numbers between `1` and `10`.
+
+_note_: `%` is the _modulo_ operator in Go. All even numbers divide wholly by `2`, leaving `0` as their _modulo_ (or remainder).
+
+* continue
+
+Unlike languages like Java, `if` statements in Go are often used as _guard_clauses_.
+
+We say that when everything is true the code reads from the top to the bottom of the page.
+
+We can rewrite the previous program using a new statement, `continue`, which _skips_ the body of the loop.
+
+.code -edit src/conditionals/conditionals2/main.go /START OMIT/,/END OMIT/
+
+- Uncomment the `if`i%1`==`1`{`, `continue`, and `}` lines.
+
+* break
+
+This program is an _infinite_loop_. There is no _condition_expression_ in the `for` loop.
+
+We can use the `break` statement, which breaks out of the _current_ loop, to fix it.
+
+.code -edit src/conditionals/conditionals3/main.go /START OMIT/,/END OMIT/
+
+- Uncomment the `if`i`>`10`{`, `break`, and `}` lines.
+
+* Type inference
+
+In the examples so far we've avoided talking about types, this is because Go supports _type_inference_.
+
+Type inference lets you omit the type of a variable during declaration.
+
+For example:
+
+ var i = 7
+
+Go sees that `i` is being declared and initalised with the value `7`, so the compiler infers the type of `i` is an `int`.
+
+However if we did
+
+ var s = "seven"
+
+Go sees that `s` is being initalised with the _string_ `"seven"`, so the compiler infers the type of `s` is a `string`.
+
+* Explicit type declaration
+
+Sometimes you will want to tell Go to use a specific type.
+
+You do this when you declare a variable:
+
+ var i int = 4
+ var s string = "Слава Україні!"
+
+Which tells the compiler that you are declaring `i` explicitly to be an `int` with the value `7`, and `s` to be a `string` with the value `"Слава Україні"`
+
+We'll talk about the kinds of types that Go supports on the next slide.
+
+* Types
+
+Go is a strongly typed language, like Java, C, C++, and Python. Go has nine kinds of types, they are:
+
+- strings: `string`.
+- signed integers: `int8`, `int16`, `int32`, `int64`.
+- unsigned integers: `uint8`, `uint6`, `uint32`, `uint64`.
+- aliases: `byte`, `rune`, `int`, `uint`.
+- booleans: `bool`.
+- IEEE floating point: `float32`, `float64`.
+- Complex types: `complex64`, `complex128`.
+- Compound types: `array`, `slice`, `map`, `struct`.
+- Pointer types: `*int`, `*bytes.Buffer`.
+
+* String types
+
+Strings are the most common data type in Go programs.
+
+String types behave much as you would expect in other languages.
+
+.code -edit src/strings/strings1/main.go /START OMIT/,/END OMIT/
+
+Strings may be _concatenated_ with the `+` operator.
+
+_note_: In Go an empty string is `""`, not `null` or `nil`.
+
+* Integer types
+
+Integer types are the second most common in Go.
+
+Integer types come in two types; _signed_ and _unsigned_.
+
+Integer types also come in several sizes, represented by the number of bits they represent;
+
+- Signed integers: `int8`, `int16`, `int32`, `int64`.
+- Unsigned integers: `uint8`, `uint16`, `uint32`, `uint64`.
+
+Go has two integer types
+
+- `int`, alias for `int32` or `int64` depending on platform.
+- `uint`, alias for `uint32` or `uint64` depending on platform.
+
+whose size depends on the platform you used to build your Go program.
+
+* Integer types (cont.)
+
+Why does Go support so many kinds of integer types?
+
+Different _sized_ integer types can accommodate different ranges of numbers.
+
+.code -edit src/types/types1/main.go /START OMIT/,/END OMIT/
+
+This program contains two type errors.
+
+- Fix the program by changing the declared types of `x` and `y`.
+
+* Functions
+
+Now it's time to talk about _functions_.
+
+All Go you write is made up of functions, in fact, you've been writing functions all along.
+
+.code -edit src/functions/functions1/main.go /START OMIT/,/END OMIT/
+
+This is the same program as the previous example, showing the _function_declaration_, which was previously hidden.
+
+- All Go programs start in a function called `main`, we call this the _main_function_.
+
+* func
+
+You can declare your own functions with the `func` declaration.
+A function's name must be a valid identifier, just like `const` and `var`.
+
+.code -edit src/functions/functions2/main.go /START OMIT/,/END OMIT/
+
+This program declares two functions, `main` and `hello`.
+
+- Uncomment the `println("Здоровеньки були")` statement in `func`hello`.
+
+_note_: `println` is a _built_in_ function provided, you don't need to declare it.
+
+* Function parameters
+
+To make functions useful, you often need to pass _arguments_ to a function.
+
+To pass an argument to a function, the type of the argument and the type of the function's _formal_parameter_ must be the same.
+
+.code -edit src/functions/functions3/main.go /START OMIT/,/END OMIT/
+
+In this program the type of the argument passed to `hello` does not match the type of the `name` parameter.
+
+- Fix the declaration of `hello` so that the type of the parameter matches the type of the argument provided.
+
+* Packages
+
+A package is the unit in which software is shared and reused in Go. All Go code is arranged into packages.
+
+Each source file in a package must begin with the same `package` declaration.
+
+A package's name must be a valid identifier, just like `const`, `var`, and `func`.
+
+.code -edit src/packages/packages1/main.go
+
+This is the same example as the previous slide, revealing the `package` declaration.
+
+`package`main` is the name of the package which contains the entry point to your program, `func`main`.
+
+* main packages
+
+This program has the wrong `package` declaration.
+
+.code -edit src/packages/packages2/main.go
+
+- Change the `package` declaration to make the program compile.
+
+* Import
+
+The final declaration we'll cover in this section is the _import_ declaration.
+
+The `import` declaration allows you to use code from other _packages_ into your package.
+When you `import` a package, the _public_ types, functions, variables, types, and constants, are available with a prefix of the package's name.
+
+ time.Now	// denotes the Now function in package time
+
+Note that
+
+ import "fmt"
+ import "time"
+
+and
+
+ import (
+         "fmt"
+         "time"
+ )
+
+both import the `fmt` and `time` packages. The syntax is different, but they are equivalent.
+
+* Import (cont.)
+
+The `import` declaration must appear _after_ the `package` declaration, but before any `type`, `const`, `var`, or `func` declarations.
+
+.code -edit src/imports/imports1/main.go 
+
+This program does not compile as the `import` declaration is in the wrong place.
+
+- Move the `var`now`=`time.Now()` declaration _below_ the `import` declaration.
+
+* Import (cont.)
+
+Packages contain both _public_ and _private_ symbols. We also call these _exported_ and _not_exported_, respectively.
+
+.code -edit src/imports/imports2/main.go 
+
+This program does not compile as it refers to two _private_ symbols.
+
+- Fix the program by using the correct case for `Println` and `Time`.
+
+_note_: If you are running this slide from [[https://go-talks.golang.org/][gotalks.golang.org]], the time may be reported as `2009-11-10`23:00:00`+0000`UTC`. This is a technical limitation.
+
+* fmt package
+
+Do you remember this program?
+
+.code -edit src/imports/imports3/main.go
+
+Here it is again, showing the `func`, `package` and `import` declarations making it a complete Go program.
+
+This program also uses the `Println` function from the `fmt` package, which is more capable than the built in `println` function.
+
+* Recap
+
+Now you know the basics of Go!
+
+You've learnt:
+
+- How to declare constants and variables
+- How to write `for` loops and use `if`.
+- How types work.
+- How to write your own functions.
+- How packages and `import` statements work.
+
+* Practice
+
+* go build
+
+Go is a compiled language, so the usual work flow is 
+
+- Edit code
+- `go`build`
+- Run program
+
+Let's try building a Go program
+
+- `cd`$GOPATH/src/helloworld`
+- Read the source for `hello.go`
+- Build the source with `go`build`
+- Run the program `./helloworld`
+
+* What time is it (exercise)
+
+Let's write a clock, a program that prints out the current time
+
+- `cd`$GOPATH/src/whattimeisit`
+- edit `main.go` and finish the program (if you get stuck the answer is in `answer.go`)
+- Build the program with, `go`build` (if you make an error, go back and edit `main.go`)
+- Run your program `./whattimeisit`, it should print something like this
+
+ The current time is 2016-12-05 12:33:18.222821474 +0900 JST
+
+* Question time
+
+* Resources
+
+I would like to recommend several online resources:
+
+.link https://dave.cheney.net/resources-for-new-go-programmers Resources for new Go programmers
+.link https://golang.org/doc/code.html How to Write Go Code
+.link https://tour.golang.org/welcome/1 tour.golang.org
+.link https://golang.org/doc/effective_go.html Effective Go
+.link https://gobyexample.com/ Go by Example
+.link http://www.goin5minutes.com/ Go in 5 minutes
+.link https://miek.nl/go/ LEARNING GO online book
+.link https://habrahabr.ru/hub/go/ Habrahabr

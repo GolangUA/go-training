@@ -1109,13 +1109,10 @@ But a _block_scoped_ variable shadowing a _function_scoped_ variable may be surp
 
 I would like to recommend several online resources:
 
-.link https://github.com/golang/go/wiki/CodeReviewComments Go Code Review Comments
+.link http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/ 50 Shades of Go
+.link https://go-traps.appspot.com Go Traps
+.link https://gobyexample.com/ Go by Example
 
 .link https://dave.cheney.net/resources-for-new-go-programmers Resources for new Go programmers
-.link https://golang.org/doc/code.html How to Write Go Code
-.link https://tour.golang.org/welcome/1 tour.golang.org
 .link https://golang.org/doc/effective_go.html Effective Go
-.link https://gobyexample.com/ Go by Example
-.link http://www.goin5minutes.com/ Go in 5 minutes
-.link https://miek.nl/go/ LEARNING GO online book
-.link https://habrahabr.ru/hub/go/ Habrahabr
+.link https://miek.nl/go/ LEARNING GO online book (up to [[https://miek.nl/go/#interfaces][Interfaces]])

@@ -105,6 +105,36 @@ Go is an opinionated language.
 
 .code -edit src/hellohttp/hellohttp.go
 
+* Who use Go
+
+.image ./img/logo-1.png _ 1000
+
+* Who use Go
+
+.image ./img/logo-2.png _ 1000
+
+* Who use Go
+
+.image ./img/logo-3.png _ 1000
+
+* Who use Go
+
+.image ./img/logo-4.png _ 1000
+
+* Who use Go
+
+.image ./img/logo-5.png _ 1000
+
+* Who use Go
+
+.image ./img/logo-6.png _ 1000
+
+* Who use Go
+
+.image ./img/logo-7.png _ 1000
+
+[[https://github.com/golang/go/wiki/GoUsers][github wiki]]
+
 * Development environment and tooling
 
 * Development environment and tooling
@@ -217,6 +247,26 @@ Using a workspace allows you to import code from other packages with a fixed nam
 Will import the code for the `profile` package stored in
 
  $GOPATH/src/github.com/pkg/profile
+
+* Golang workspace
+
+A workspace is a directory hierarchy with three directories at its root:
+
+- src contains Go source files,
+- pkg contains package objects, and
+- bin contains executable commands.
+
+[[https://golang.org/doc/code.html#Workspaces][Workspace]]
+
+* Imperative Programming
+
+.image http://mybscit.com/wp-content/uploads/2016/08/Capture-1.png 500 _
+
+* Imperative Programming
+
+.image http://mybscit.com/wp-content/uploads/2016/08/Capture2.png 500 _
+
+[[http://mybscit.com/imperative-programming/flowchart-in-c-programming][source]]
 
 * Basic Syntax
 
@@ -355,6 +405,17 @@ There are several kinds of statements in Go, we've seen a few already. The most 
 - Conditionals: `if`…`{`…`}`else`{`…`}`, `switch`{`…`}`
 - Loops: `for`…`{`…`}`
 - Control flow: `break`, `fallthrough`, `continue`, `goto`, `return`.
+
+* Go Operators
+
+- Arithmetic Operators
+- Relational Operators
+- Logical Operators
+- Bitwise Operators
+- Assignment Operators
+- Misc Operators
+
+[[https://www.tutorialspoint.com/go/go_operators.htm][Go Operators]]
 
 * Assignment
 

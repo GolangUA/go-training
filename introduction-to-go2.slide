@@ -1,5 +1,4 @@
 Introduction to Go (Part 2)
-Internal SoftServe Golang Training
 20 Apr 2017
 
 Ivan Kutuzov
@@ -44,67 +43,6 @@ If you have suggestions or corrections to this presentation, please raise [[http
 * Organization questions
 
 All communication via Slack [[https://gophers.in.ua][please join]]
-
-* Who use Go
-
-.image ./img/logo-1.png _ 1000
-
-* Who use Go
-
-.image ./img/logo-2.png _ 1000
-
-* Who use Go
-
-.image ./img/logo-3.png _ 1000
-
-* Who use Go
-
-.image ./img/logo-4.png _ 1000
-
-* Who use Go
-
-.image ./img/logo-5.png _ 1000
-
-* Who use Go
-
-.image ./img/logo-6.png _ 1000
-
-* Who use Go
-
-.image ./img/logo-7.png _ 1000
-
-[[https://github.com/golang/go/wiki/GoUsers][github wiki]]
-
-* Imperative Programming
-
-.image http://mybscit.com/wp-content/uploads/2016/08/Capture-1.png 500 _
-
-* Imperative Programming
-
-.image http://mybscit.com/wp-content/uploads/2016/08/Capture2.png 500 _
-
-[[http://mybscit.com/imperative-programming/flowchart-in-c-programming][source]]
-
-* Golang workspace
-
-A workspace is a directory hierarchy with three directories at its root:
-
-- src contains Go source files,
-- pkg contains package objects, and
-- bin contains executable commands.
-
-[[https://golang.org/doc/code.html#Workspaces][Workspace]]
-
-* Go Operators
-
-- Arithmetic Operators
-- Relational Operators
-- Logical Operators
-- Bitwise Operators
-- Assignment Operators
-- Misc Operators
-
-[[https://www.tutorialspoint.com/go/go_operators.htm][Go Operators]]
 
 * Basic Syntax
 
@@ -617,101 +555,56 @@ To make it easier to use `fmt.Printf` in the simple case, you can use the `%v` v
 
 - Follow [[https://play.golang.org/p/B-E7JOJ1Db][this link]] to experiment with a few more formatting verbs.
 
-* Recap
+* Scope
 
-Now you know most of Go!
+We've talked about all the ways to declare a variable in Go, now we need to discuss scope.
 
-You've learnt:
+.code -edit src/scope/scope1/main.go
 
-- How Go code is formatted.
-- How what the zero value is and how it works.
-- Equality and type conversions
-- The short declaration syntax
-- Multiple assignment.
-- How slices work.
-- How maps work.
-- How the `fmt` package works.
+This program declares `x` four times. All four `x` 's are _different_ because they exist in different scopes.
 
-Time for lunch!
+- Follow [[https://play.golang.org/p/nIcOXVXgwl][this link]] and press the *Run* button.
 
-* Testing
+* Scope (cont.)
 
-I wanted to spend some time on testing because for the rest of the day we'll be using tests to complete code exercises.
+The scope of a declaration is bound to the closest pair of curly braces, `{` and `}`.
 
-The testing package can also contain benchmark functions and examples, which show up in godoc.
+.code -edit src/scope/scope2/main.go
 
-You should include tests for each package that you write.
+In this example, we declare `x` to be 100 inside `main`, and 200 inside `f`.
 
-The `testing` package is ideal for _unit_tests_. It's _ok_ for functional tests, but not really suitable for complex integration tests.
+- Follow [[https://play.golang.org/p/Xfi3GOhTiC][this link]] and press the *Run* button.
+- Did the program print what you expected?
 
-* go test
+* Scope (cont.)
 
-`go`test` is the unit testing framework built into the Go standard library. It lives in the `testing` package.
+What do you expect this program will print?
 
-Tests live in `_test.go` files, eg. the `strings` package has these files:
+.code -edit src/scope/scope3/main.go
 
-- `strings.go` functions to manipulate UTF-8 encoded strings.
-- `strings_test.go` tests for the `strings` package.
+- Follow [[https://play.golang.org/p/7uxrebFzmK][this link]] and press the *Run* button.
+- Did you guess the right answer?
 
-Each test is a function in the form
+* Scope (cont.)
 
- func TestNameOfTest(t *testing.T) { ... }
+What do you expect this program will print?
 
-- `NameOfTest` is the name of your test, it _must_ start with an upper case letter.
-- Test functions take a `testing.T` value, which provides helpers like `t.Error` and `t.Fail`.
+.code -edit src/scope/scope4/main.go
 
-* Writing tests
+- Follow [[https://play.golang.org/p/7hpZre9LhI][this link]] and press the *Run* button.
+- Did you guess the right answer?
 
-Let's write some tests using our own version of the strings package, called `simplestrings`.
+* Shadowing
 
-- The code for this exercise is in `$GOPATH/src/simplestrings/`
-- Read the source code for `simplestrings.go`
+What you are seeing is called _shadowing_.
 
-Together we'll write some tests for the functions in our `simplestrings` package.
+.code -edit src/scope/scope5/main.go /START1 OMIT/,/END1 OMIT/
 
-We'll use the test coverage (see next slide) tool to check our work.
+Most of you will be comfortable with a _function_scoped_ variable shadowing a _package_scoped_ variable.
 
-* Test coverage
+.code -edit src/scope/scope5/main.go /START2 OMIT/,/END2 OMIT/
 
-`go`test` can report coverage
-
- go test -coverprofile=cover.out
-
-This produces a coverage file, `cover.out`
-
-- `go`tool`cover`-func=cover.out` will print the coverage report
-- `go`tool`cover`-html=cover.out` will open the report in a browser
-
-_Protip_: I use these little shell functions to make this easier
-
- cover () {
-   t=$(mktemp -t cover)
-   go test $COVERFLAGS -coverprofile=$t $@ && go tool cover -func=$t && unlink $t
- }
-
- cover-web() {
-   t=$(mktemp -t cover)
-   go test $COVERFLAGS -coverprofile=$t $@ && go tool cover -html=$t && unlink $t
- }
-
-* The standard library
-
-Go ships with a rich standard library of packages. This includes
-
-- file input / output
-- string handling
-- compression
-- encoding and decoding of JSON and XML
-- network handling
-- HTTP client and server
-
-* String formatting
-
-As a warm up, let's do a small exercise together. 
-
-The code for this exercise is in `$GOPATH/src/exercises/sprintf`
-
-If you get stuck, the answers are in `$GOPATH/src/exercises/sprintf/answers_test.go`.
+But a _block_scoped_ variable shadowing a _function_scoped_ variable may be surprising.
 
 * Structs
 
@@ -836,6 +729,127 @@ In `CountLines` from our previous example, if an error happened during reading l
 Go has a keyword `defer` to ensure operations _always_ happen.
 
 .code -edit src/defer/defer1.go /START OMIT/,/END OMIT/
+
+* Documenting packages with comments
+
+Go code is traditionally documented with comments in the source code. This is similar to Python's heredoc convention.
+
+Here are some examples
+
+ // simplestrings provides simple helper functions to work with strings
+ package simplestrings
+
+ // APIVersion is the version of this package's API
+ const APIVersion = 3
+
+ // NextID returns the next ID in the sequence
+ func NextID() uint64 { ... }
+
+_Notes_
+
+- Comments directly precede the thing they apply to, don't put an extra newline in between the comment and the symbol
+- You should comment both Public and private symbols, but godoc will only show you the documents
+
+* Recap
+
+Now you know most of Go!
+
+You've learnt:
+
+- How Go code is formatted.
+- How what the zero value is and how it works.
+- Equality and type conversions
+- The short declaration syntax
+- Multiple assignment.
+- How slices work.
+- How maps work.
+- How the `fmt` package works.
+- Scope
+- Struct
+- Pointers
+- Interfaces
+- Nil
+- Defer
+- Documenting
+
+* The standard library
+
+Go ships with a rich standard library of packages. This includes
+
+- file input / output
+- string handling
+- compression
+- encoding and decoding of JSON and XML
+- network handling
+- HTTP client and server
+
+* String formatting
+
+As a warm up, let's do a small exercise together. 
+
+The code for this exercise is in `$GOPATH/src/exercises/sprintf`
+
+If you get stuck, the answers are in `$GOPATH/src/exercises/sprintf/answers_test.go`.
+
+* Testing
+
+I wanted to spend some time on testing because for the rest of the day we'll be using tests to complete code exercises.
+
+The testing package can also contain benchmark functions and examples, which show up in godoc.
+
+You should include tests for each package that you write.
+
+The `testing` package is ideal for _unit_tests_. It's _ok_ for functional tests, but not really suitable for complex integration tests.
+
+* go test
+
+`go`test` is the unit testing framework built into the Go standard library. It lives in the `testing` package.
+
+Tests live in `_test.go` files, eg. the `strings` package has these files:
+
+- `strings.go` functions to manipulate UTF-8 encoded strings.
+- `strings_test.go` tests for the `strings` package.
+
+Each test is a function in the form
+
+ func TestNameOfTest(t *testing.T) { ... }
+
+- `NameOfTest` is the name of your test, it _must_ start with an upper case letter.
+- Test functions take a `testing.T` value, which provides helpers like `t.Error` and `t.Fail`.
+
+* Writing tests
+
+Let's write some tests using our own version of the strings package, called `simplestrings`.
+
+- The code for this exercise is in `$GOPATH/src/simplestrings/`
+- Read the source code for `simplestrings.go`
+
+Together we'll write some tests for the functions in our `simplestrings` package.
+
+We'll use the test coverage (see next slide) tool to check our work.
+
+* Test coverage
+
+`go`test` can report coverage
+
+ go test -coverprofile=cover.out
+
+This produces a coverage file, `cover.out`
+
+- `go`tool`cover`-func=cover.out` will print the coverage report
+- `go`tool`cover`-html=cover.out` will open the report in a browser
+
+_Protip_: I use these little shell functions to make this easier
+
+ cover () {
+   t=$(mktemp -t cover)
+   go test $COVERFLAGS -coverprofile=$t $@ && go tool cover -func=$t && unlink $t
+ }
+
+ cover-web() {
+   t=$(mktemp -t cover)
+   go test $COVERFLAGS -coverprofile=$t $@ && go tool cover -html=$t && unlink $t
+ }
 
 * Error handling (cont.)
 
@@ -1027,77 +1041,6 @@ Features:
  {"title":"moby.txt","lines":"22659"}
 
 The code for this exercise is in `$GOPATH/src/exercises/httplinecount`
-
-* Documenting packages with comments
-
-Go code is traditionally documented with comments in the source code. This is similar to Python's heredoc convention.
-
-Here are some examples
-
- // simplestrings provides simple helper functions to work with strings
- package simplestrings
-
- // APIVersion is the version of this package's API
- const APIVersion = 3
-
- // NextID returns the next ID in the sequence
- func NextID() uint64 { ... }
-
-_Notes_
-
-- Comments directly precede the thing they apply to, don't put an extra newline in between the comment and the symbol
-- You should comment both Public and private symbols, but godoc will only show you the documents
-
-* Scope
-
-We've talked about all the ways to declare a variable in Go, now we need to discuss scope.
-
-.code -edit src/scope/scope1/main.go
-
-This program declares `x` four times. All four `x` 's are _different_ because they exist in different scopes.
-
-- Follow [[https://play.golang.org/p/nIcOXVXgwl][this link]] and press the *Run* button.
-
-* Scope (cont.)
-
-The scope of a declaration is bound to the closest pair of curly braces, `{` and `}`.
-
-.code -edit src/scope/scope2/main.go
-
-In this example, we declare `x` to be 100 inside `main`, and 200 inside `f`.
-
-- Follow [[https://play.golang.org/p/Xfi3GOhTiC][this link]] and press the *Run* button.
-- Did the program print what you expected?
-
-* Scope (cont.)
-
-What do you expect this program will print?
-
-.code -edit src/scope/scope3/main.go
-
-- Follow [[https://play.golang.org/p/7uxrebFzmK][this link]] and press the *Run* button.
-- Did you guess the right answer?
-
-* Scope (cont.)
-
-What do you expect this program will print?
-
-.code -edit src/scope/scope4/main.go
-
-- Follow [[https://play.golang.org/p/7hpZre9LhI][this link]] and press the *Run* button.
-- Did you guess the right answer?
-
-* Shadowing
-
-What you are seeing is called _shadowing_.
-
-.code -edit src/scope/scope5/main.go /START1 OMIT/,/END1 OMIT/
-
-Most of you will be comfortable with a _function_scoped_ variable shadowing a _package_scoped_ variable.
-
-.code -edit src/scope/scope5/main.go /START2 OMIT/,/END2 OMIT/
-
-But a _block_scoped_ variable shadowing a _function_scoped_ variable may be surprising.
 
 * Practice
 

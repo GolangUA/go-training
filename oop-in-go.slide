@@ -63,7 +63,7 @@ If you have suggestions or corrections to this presentation, please raise [[http
 
 - Declarations
 - Loops and conditions
-- Workflow instruction
+- Control Flow
 - User Types
 - User Function
 - Packages
@@ -96,10 +96,80 @@ Software design is about representation: how do we represent the solution to a p
 
 Creating a software representation that can be usefully viewed as isomorphic with some aspect of the real world is a common software design task.
 
+.link https://www.activestate.com/blog/2017/03/go-object-oriented-developers source
+
+* Object Oriented Principles
+
+Object-oriented programming (OOP) is a programming paradigm based on the concept of "objects", which may contain data, in the form of fields, often known as attributes; and code, in the form of procedures, often known as methods. A feature of objects is that an object's procedures can access and often modify the data fields of the object with which they are associated.
+
+.link https://en.wikipedia.org/wiki/Object-oriented_programming source
+
+Object orientation is an approach to software development in which we focus on objects and their attributes and responsibilities.  All business problems involve things.  These things can be mapped to a set of objects, such as customers, invoices, etc. In any given business problem the various things have attributes like name, color, weight, etc and they have responsibilities such as initiate and order, fulfill an order, pay an invoice, etc.
+
+The object oriented approach of system building starts with the earliest phase of analysis of the business problem.
+
+.link http://www.jamesbooth.com/OOPBasics.htm source
+
+* Object Oriented Principles
+
+- Abstraction
+- Specialization
+- Encapsulation
+- Inheritance
+- Polymorphism
+
+* Attribution
+
+This is the ability to represent a complex problem in simple terms.  In the object oriented approach it is seen in the ability to create a high level class definition that has little or no detail included in it.  We are able to “abstract” the problem to a simple class definition and only add detail alter in the process.
+
+The ability to support abstraction is instrumental in being able to model very complex business problems in our designs.
+
+* Specialization
+
+Seen in class structures, specialization is the ability to make lower level subclasses more detailed than their parent classes.  Technically, specialization is defined as the ability of an object to inherit operations and attributes from a superclass (parent class) with possible restrictions and additions.
+
+* Encapsulation
+
+Defined as hiding the implementation of the object, encapsulation is really the process of making an object as self sufficient as is possible.  An object contains not only code but also data.  Encapsulation, in the structured design, is the process of enclosing all of the code necessary to a particular operation into a single module and limiting the external dependencies of that module.
+
+The ability to restrict or provide access to data and the ability to tie behavior or methods with the data. For Go some of the salient features are: 
+
+- There are two levels of access - within the package alone, and public. 
+- tarts with a capital letter it is exported outside the package and is public. If instead it starts with a small letter, it is visible only within the package.
+- Exported/public items: MyStruct, MyMethod, MyField
+- Items with package visibility: myStruct, myMethod, myField
+- You can tie in methods/behavior to a type by defining functions associated with it. func (m my_type) my_func() int {  }
+- You cannot attach methods to a type if it is not defined in the local package.
+
+* Inheritance
+
+Just as you and I have inherited certain traits from our ancestors, so do classes in an object oriented system. There are superclasses (classes that have subclasses) and there are subclasses (classes that inherit form another class).  These terms, superclass and subclass, are relative in that a given class may be a subclass of one class and a superclass for another.
+
+_Inheritance_: the ability for one type to obtain the features of a type above it in a hierarchy. For Go, some of the salient features are:
+
+- Inheritance is obtained through anonymous fields - anonymous fields appear to attach its behavior to the composing class. 
+- Both data fields and methods are available to derived types. Outside of the package, only the types, fields, and methods named with a starting capital letter is inherited. Inside a package, everything is inherited.
+- Multiple inheritance is possible - by including an anonymous field of each of the parent types. `type Child struct { Father; Mother  }`
+
+* Polymorphism
+
+_Polymorphism_: when a type seems to exhibit different behaviors when linked to different instances, the type can be said to exhibit polymorphism. 
+
+- Interfaces in Go can be used to implement polymorphism. A variable of a type can be assigned to a variable of any interface it implements.
+
+
+
 * Question time
 
 * Resources
 
+.link https://www.activestate.com/blog/2017/03/go-object-oriented-developers GO FOR OBJECT-ORIENTED DEVELOPERS
+.link https://en.wikipedia.org/wiki/Object-oriented_programming Wiki
+.link http://www.golangbootcamp.com/book Golang Bootcamp
+.link https://www.youtube.com/watch?v=zzAdEt3xZ1M SOLID by Dave Cheney (Golang UK Conference 2016)
+.link https://dave.cheney.net/2016/08/20/solid-go-design SOLID Go Design by Dave Cheney
+.link https://code.tutsplus.com/tutorials/lets-go-object-oriented-programming-in-golang--cms-26540 Object Oriented Programming in Golang
+.link https://www.goinggo.net/2013/07/object-oriented-programming-in-go.html Object Oriented Programming in Go
 
 
 .link https://golang.org/doc/effective_go.html Effective Go

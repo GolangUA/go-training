@@ -1,0 +1,286 @@
+Object Oriented Principles in Go
+26 Apr 2017
+
+Ivan Kutuzov
+ikut@softserveinc.com
+https://discuss.7insyde.com
+https://golang.org.ua
+@arbrix
+
+* License and Materials
+
+This presentation is licensed under the [[https://creativecommons.org/licenses/by-sa/4.0/][Creative Commons Attribution-ShareAlike 4.0 International]] licence.
+
+The materials for this presentation are available on GitHub:
+
+.link https://github.com/GolangUA/go-training
+
+You are encouraged to remix, transform, or build upon the material, providing you give appropriate credit and distribute your contributions under the same license.
+
+If you have suggestions or corrections to this presentation, please raise [[https://github.com/GolangUA/go-training/issues][an issue on the GitHub project]].
+
+* Agenda
+
+- Recap / Homework
+- Basic Principles
+- Golang difference
+- SOLID
+- Examples
+
+* Previous Sessions
+
+* On the previous session
+
+- Who use Go
+- Imperative programs
+- Go Environment (Workspace)
+- Go Operators
+- Basic Syntax
+- Advanced Syntax
+- Homework
+
+* The Go programming language
+
+- Modern
+- Compact, concise, general-purpose
+- Imperative, statically type-checked, dynamically type-safe
+- Garbage-collected
+- Compiles to native code, statically linked
+- Fast compilation, efficient execution
+
+* Go Operators
+
+- Arithmetic Operators
+- Relational Operators
+- Logical Operators
+- Bitwise Operators
+- Assignment Operators
+- Misc Operators
+
+[[https://www.tutorialspoint.com/go/go_operators.htm][Go Operators]]
+
+* Basic Syntax
+
+- Declarations
+- Loops and conditions
+- Control Flow
+- User Types
+- User Function
+- Packages
+
+* Advanced Syntax
+
+- How Go code is formatted.
+- How what the zero value is and how it works.
+- Equality and type conversions
+- The short declaration syntax
+- Multiple assignment.
+- How slices, maps work.
+- How the `fmt` package works.
+- Scope
+- Struct, Pointers, Nil
+- Interfaces
+- Defer
+- Documenting
+
+* Homework
+
+* Object Oriented Principles
+
+* Object Oriented Principles
+
+Software design is about representation: how do we represent the solution to a problem in code that can be executed on the machine of our choice? How do we represent the problem domain to the user? 
+
+Creating a software representation that can be usefully viewed as isomorphic with some aspect of the real world is a common software design task.
+
+.link https://www.activestate.com/blog/2017/03/go-object-oriented-developers source
+
+* Object Oriented Principles
+
+Object-oriented programming (OOP) is a programming paradigm based on the concept of "objects", which may contain data, in the form of fields, often known as attributes; and code, in the form of procedures, often known as methods. A feature of objects is that an object's procedures can access and often modify the data fields of the object with which they are associated.
+
+.link https://en.wikipedia.org/wiki/Object-oriented_programming source
+
+Object orientation is an approach to software development in which we focus on objects and their attributes and responsibilities.  All business problems involve things.  These things can be mapped to a set of objects, such as customers, invoices, etc. In any given business problem the various things have attributes like name, color, weight, etc and they have responsibilities such as initiate and order, fulfill an order, pay an invoice, etc.
+
+.link http://www.jamesbooth.com/OOPBasics.htm source
+
+* Object Oriented Principles
+
+- Abstraction
+- Specialization
+- Encapsulation
+- Inheritance
+- Polymorphism
+
+* Attribution
+
+This is the ability to represent a complex problem in simple terms.  In the object oriented approach it is seen in the ability to create a high level class definition that has little or no detail included in it.  We are able to “abstract” the problem to a simple class definition and only add detail alter in the process.
+
+The ability to support abstraction is instrumental in being able to model very complex business problems in our designs.
+
+* Specialization
+
+Seen in class structures, specialization is the ability to make lower level subclasses more detailed than their parent classes.  Technically, specialization is defined as the ability of an object to inherit operations and attributes from a superclass (parent class) with possible restrictions and additions.
+
+* Encapsulation
+
+Defined as hiding the implementation of the object, encapsulation is really the process of making an object as self sufficient as is possible.  An object contains not only code but also data.  Encapsulation, in the structured design, is the process of enclosing all of the code necessary to a particular operation into a single module and limiting the external dependencies of that module.
+
+- There are two levels of access - within the package alone, and public. 
+- tarts with a capital letter it is exported outside the package and is public. If instead it starts with a small letter, it is visible only within the package.
+- Exported/public items: MyStruct, MyMethod, MyField
+- Items with package visibility: myStruct, myMethod, myField
+- You can tie in methods/behavior to a type by defining functions associated with it. func (m my_type) my_func() int {  }
+- You cannot attach methods to a type if it is not defined in the local package.
+
+* Inheritance
+
+Just as you and I have inherited certain traits from our ancestors, so do classes in an object oriented system. There are superclasses (classes that have subclasses) and there are subclasses (classes that inherit form another class).  These terms, superclass and subclass, are relative in that a given class may be a subclass of one class and a superclass for another.
+
+_Inheritance_: the ability for one type to obtain the features of a type above it in a hierarchy. For Go, some of the salient features are:
+
+- Inheritance is obtained through anonymous fields - anonymous fields appear to attach its behavior to the composing class. 
+- Both data fields and methods are available to derived types. Outside of the package, only the types, fields, and methods named with a starting capital letter is inherited. Inside a package, everything is inherited.
+- Multiple inheritance is possible - by including an anonymous field of each of the parent types. `type Child struct { Father; Mother  }`
+
+* Polymorphism
+
+_Polymorphism_: when a type seems to exhibit different behaviors when linked to different instances, the type can be said to exhibit polymorphism. 
+
+- Interfaces in Go can be used to implement polymorphism. A variable of a type can be assigned to a variable of any interface it implements.
+
+* Representation in Go
+
+Golang makes a number of design choices that distinguish it from other languages and make it a flexible, powerful, and relatively safe tool for representing a wide range of things.
+
+- ability to add methods to any type except primitives
+- interfaces
+- structs
+
+* Methods in Go
+
+Go is a very strongly typed language, to the extent that even ints and floats won't interoperate without explicit casting. Types have a number of different aspects, however, that make them very flexible.
+
+In Go, because methods are not part of the type and can be defined anywhere, a separate discipline must be practiced to ensure that the methods (verbs) we define on types (nouns) add up to a more-or-less coherent representation of whatever aspect of the world it is that is being represented by the type.
+
+.link https://www.activestate.com/blog/2017/03/go-object-oriented-developers Methods in Go 
+
+* Interfaces
+
+The next interesting bit of the language is interfaces, which have two roles in Go: enforcing duck-like typing at compile time and allowing dynamic dispatch.
+
+Duck typing is the Pythonic concept that if it walks and talks like a duck, it is a duck: if an object has an interface that conforms to something, it is a thing of that type.
+
+This might also be called "syntactical typing", as all that matters is the syntax of the call.
+
+The problem with the Pythonic way of doing things is that there is no way of telling if a type conforms to an interface until it doesn't.
+
+Interfaces allow Go programs to be checked at compile time to see if an object has all the methods required for a given interface, without further constraining the type.
+
+* Structs
+
+As the name suggests, a struct is more like a C struct than a C++ class. Structs allow data to be grouped together in convenient representational form, and permit a limited form of inheritance.
+
+
+Structs take subtypes by declaring anonymous members rather than an explicit inheritance syntax.
+
+Go simply recognizes anonymous members at the start of a struct declaration as base types for the struct, and allows the fields of the base types to be accessed directly.
+
+* Object-Oriented Programming in Golang
+
+.link http://golangtutorials.blogspot.com/2011/06/structs-in-go-instead-of-classes-in.html Struct in Go
+.link http://golangtutorials.blogspot.com/2011/06/anonymous-fields-in-structs-like-object.html Anonymous fields in structs - like object composition
+.link http://golangtutorials.blogspot.com/2011/06/methods-on-structs.html Methods on structs
+.link http://golangtutorials.blogspot.com/2011/06/inheritance-and-subclassing-in-go-or.html Inheritance and subclassing in Go
+.link http://golangtutorials.blogspot.com/2011/06/interfaces-in-go.html Interfaces in Go
+.link http://golangtutorials.blogspot.com/2011/06/polymorphism-in-go.html Polymorphism in Go
+.link https://code.tutsplus.com/tutorials/lets-go-object-oriented-programming-in-golang--cms-26540 Object-Oriented Programming in Golang
+
+* SOLID
+
+In 2002 Robert Martin published his book, [[https://www.amazon.co.uk/dp/0135974445/ref=pd_lpo_sbs_dp_ss_2/253-1946330-6751666?pf_rd_m=A3P5ROKL5A1OLE&pf_rd_s=lpo-top-stripe&pf_rd_r=23C4AHYV7EXGYHKD6G8Q&pf_rd_t=201&pf_rd_p=569136327&pf_rd_i=0132760584][Agile Software Development, Principles, Patterns, and Practices.]] In it he described five principles of reusable software design, which he called the SOLID principles, after the first letters in their names.
+
+- Single Responsibility Principle
+- Open / Closed Principle
+- Liskov Substitution Principle
+- Interface Segregation Principle
+- Dependency Inversion Principle
+
+* Single Responsibility Principle
+
+    A class should have one, and only one, reason to change.
+    –Robert C Martin
+
+Now Go obviously doesn’t have classes—instead we have the far more powerful notion of composition—but if you can look past the use of the word class.
+
+Code that has a single responsibility therefore has the fewest reasons to change.
+
+Doug McIlroy’s Unix philosophy; small, sharp tools which combine to solve larger tasks, oftentimes tasks which were not envisioned by the original authors.
+
+* Open / Closed Principle
+
+    Software entities should be open for extension, but closed for modification.
+    –Bertrand Meyer, Object-Oriented Software Construction
+
+Embedding isn’t just for methods, it also provides access to an embedded type’s fields. As you see, because both `A` and `B` are defined in the same package, `B` can access `A`‘s private year field as if it were declared inside `B`.
+
+So embedding is a powerful tool which allows Go’s types to be open for extension.
+
+.link https://dave.cheney.net/2016/08/20/solid-go-design source
+
+* Liskov Substitution Principle
+
+Coined by Barbara Liskov, the Liskov substitution principle states, roughly, that two types are substitutable if they exhibit behaviour such that the caller is unable to tell the difference.
+
+In a class based language, Liskov’s substitution principle is commonly interpreted as a specification for an abstract base class with various concrete subtypes. But Go does not have classes, or inheritance, so substitution cannot be implemented in terms of an abstract class hierarchy.
+
+    Require no more, promise no less.
+    –Jim Weirich
+
+* Interface Segregation Principle
+
+    Clients should not be forced to depend on methods they do not use.
+    –Robert C. Martin
+
+The application of the interface segregation principle can refer to a process of isolating the behaviour required for a function to do its job.
+pplying the interface segregation principle to our Save function, the results has simultaneously been a function which is the most specific in terms of its requirements–it only needs a thing that is writable–and the most general in its function, we can now use Save to save our data to anything which implements io.Writer.
+
+    A great rule of thumb for Go is accept interfaces, return structs.
+    –Jack Lindamood
+
+* Dependency Inversion Principle
+
+    High-level modules should not depend on low-level modules. Both should depend on abstractions.
+    Abstractions should not depend on details. Details should depend on abstractions.
+    –Robert C. Martin
+
+If you’ve applied all the principles we’ve talked about up to this point then your code should already be factored into discrete packages, each with a single well defined responsibility or purpose. Your code should describe its dependencies in terms of interfaces, and those interfaces should be factored to describe only the behaviour those functions require. In other words, there shouldn’t be much left to do.
+
+So what I think Martin is talking about here, certainly the context of Go, is the structure of your import graph.
+
+In Go, your import graph must be acyclic. A failure to respect this acyclic requirement is grounds for a compilation failure, but more gravely represents a serious error in design.
+
+* Recap
+
+- Object Oriented Principle
+- Struct, Interface
+- SOLID
+
+* Questions?
+
+* Resources
+
+.link https://www.activestate.com/blog/2017/03/go-object-oriented-developers GO FOR OBJECT-ORIENTED DEVELOPERS
+.link https://en.wikipedia.org/wiki/Object-oriented_programming Wiki
+.link http://www.golangbootcamp.com/book Golang Bootcamp
+.link https://www.youtube.com/watch?v=zzAdEt3xZ1M SOLID by Dave Cheney (Golang UK Conference 2016)
+.link https://dave.cheney.net/2016/08/20/solid-go-design SOLID Go Design by Dave Cheney
+.link https://code.tutsplus.com/tutorials/lets-go-object-oriented-programming-in-golang--cms-26540 Object Oriented Programming in Golang
+.link https://www.goinggo.net/2013/07/object-oriented-programming-in-go.html Object Oriented Programming in Go
+
+
+.link https://golang.org/doc/effective_go.html Effective Go
+.link https://gobyexample.com/ Go by Example
+.link https://miek.nl/go/ LEARNING GO online book
+.link https://habrahabr.ru/hub/go/ Habrahabr

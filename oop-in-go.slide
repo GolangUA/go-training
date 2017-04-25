@@ -103,8 +103,6 @@ Object-oriented programming (OOP) is a programming paradigm based on the concept
 
 Object orientation is an approach to software development in which we focus on objects and their attributes and responsibilities.  All business problems involve things.  These things can be mapped to a set of objects, such as customers, invoices, etc. In any given business problem the various things have attributes like name, color, weight, etc and they have responsibilities such as initiate and order, fulfill an order, pay an invoice, etc.
 
-The object oriented approach of system building starts with the earliest phase of analysis of the business problem.
-
 .link http://www.jamesbooth.com/OOPBasics.htm source
 
 * Object Oriented Principles
@@ -128,8 +126,6 @@ Seen in class structures, specialization is the ability to make lower level subc
 * Encapsulation
 
 Defined as hiding the implementation of the object, encapsulation is really the process of making an object as self sufficient as is possible.  An object contains not only code but also data.  Encapsulation, in the structured design, is the process of enclosing all of the code necessary to a particular operation into a single module and limiting the external dependencies of that module.
-
-The ability to restrict or provide access to data and the ability to tie behavior or methods with the data. For Go some of the salient features are: 
 
 - There are two levels of access - within the package alone, and public. 
 - tarts with a capital letter it is exported outside the package and is public. If instead it starts with a small letter, it is visible only within the package.

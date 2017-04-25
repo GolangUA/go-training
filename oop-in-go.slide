@@ -1,0 +1,108 @@
+Object Oriented Principles in Go (Part 1)
+26 Apr 2017
+
+Ivan Kutuzov
+ikut@softserveinc.com
+https://discuss.7insyde.com
+https://golang.org.ua
+@arbrix
+
+* License and Materials
+
+This presentation is licensed under the [[https://creativecommons.org/licenses/by-sa/4.0/][Creative Commons Attribution-ShareAlike 4.0 International]] licence.
+
+The materials for this presentation are available on GitHub:
+
+.link https://github.com/GolagnUA/go-training
+
+You are encouraged to remix, transform, or build upon the material, providing you give appropriate credit and distribute your contributions under the same license.
+
+If you have suggestions or corrections to this presentation, please raise [[https://github.com/GolangUA/go-training/isues][an issue on the GitHub project]].
+
+* Agenda
+
+- Recap / Homework
+- Basic Principles
+- Golang difference
+- SOLID
+- Examples
+
+* Previous Sessions
+
+* On the previous session
+
+- Who use Go
+- Imperative programs
+- Go Environment (Workspace)
+- Go Operators
+- Basic Syntax
+- Advanced Syntax
+- Homework
+
+* The Go programming language
+
+- Modern
+- Compact, concise, general-purpose
+- Imperative, statically type-checked, dynamically type-safe
+- Garbage-collected
+- Compiles to native code, statically linked
+- Fast compilation, efficient execution
+
+* Go Operators
+
+- Arithmetic Operators
+- Relational Operators
+- Logical Operators
+- Bitwise Operators
+- Assignment Operators
+- Misc Operators
+
+[[https://www.tutorialspoint.com/go/go_operators.htm][Go Operators]]
+
+* Basic Syntax
+
+- Declarations
+- Loops and conditions
+- Workflow instruction
+- User Types
+- User Function
+- Packages
+
+* Advanced Syntax
+
+- How Go code is formatted.
+- How what the zero value is and how it works.
+- Equality and type conversions
+- The short declaration syntax
+- Multiple assignment.
+- How slices work.
+- How maps work.
+- How the `fmt` package works.
+- Scope
+- Struct
+- Pointers
+- Interfaces
+- Nil
+- Defer
+- Documenting
+
+* Homework
+
+* Object Oriented Principles
+
+* Object Oriented Principles
+
+Software design is about representation: how do we represent the solution to a problem in code that can be executed on the machine of our choice? How do we represent the problem domain to the user? 
+
+Creating a software representation that can be usefully viewed as isomorphic with some aspect of the real world is a common software design task.
+
+* Question time
+
+* Resources
+
+
+
+.link https://golang.org/doc/effective_go.html Effective Go
+.link https://gobyexample.com/ Go by Example
+.link https://miek.nl/go/ LEARNING GO online book
+.link https://habrahabr.ru/hub/go/ Habrahabr

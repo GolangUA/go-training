@@ -1,6 +1,5 @@
 Testing, going deeper
-Internal SoftServe Golang Training
-31 Jan 2017
+27 Apr 2017
 
 Ivan Kutuzov
 ikut@softserveinc.com
@@ -18,13 +17,89 @@ If you have suggestions or corrections to this presentation, please raise [[http
 
 * Agenda
 
+- Recap
 - Testing package
 - Tests with flags
 - Covering
 - Mocking in Golang
-- Interface & composition
-- 5 simple tips and tricks for writing tests
-- Concurrency
+
+* Previous Sessions
+
+* On the previous session
+
+- The Go programming language
+- Basic Syntax
+- Advanced Syntax
+- OOP
+
+* Object Oriented Principles
+
+- Abstraction
+- Specialization
+- Encapsulation
+- Inheritance
+- Polymorphism
+
+* SOLID
+
+- Single Responsibility Principle
+- Open / Closed Principle
+- Liskov Substitution Principle
+- Interface Segregation Principle
+- Dependency Inversion Principle
+
+* OOP in Golang
+
+- Interface Contract
+- Interface Type
+- Interface Satisfaction
+- Interface Value
+- Type Assertation
+- Type Switches
+- Interface with Nil Pointer is Non-Nil
+
+* Interface with Nil Pointer is Non-Nil
+
+A nil interface value, which contains no value at all, is not the same as an interface value con- taining a pointer that happens to be nil. This subtle distinction creates a trap into which every Go programmer has stumbled.
+
+  const debug = true
+  func main() {
+         var buf *bytes.Buffer
+         if debug {
+             buf = new(bytes.Buffer) // enable collection of output
+         }
+         f(buf) // NOTE: subtly incorrect!
+  }
+  // If out is non-nil, output will be written to it.
+  func f(out io.Writer) {
+         // ...do something...
+         if out != nil {
+             out.Write([]byte("done!\n"))
+         }
+  }
+
+* How to fix that?
+
+* Use Interface for avoiding the assigment
+
+  var buf io.Writer
+  if debug {
+          buf = new(bytes.Buffer) // enable collection of output
+  }
+  f(buf) // OK
+
+* Type Assertation
+
+* Type Switching
+
+  func (var interface{}) {
+     switch v := var.(type) {
+     case string:
+        fmt.Println("%s", v)
+     case int:
+        fmt.Println("%d", v)
+     }
+  }
 
 * Testing package
 
@@ -38,7 +113,7 @@ Go comes with a testing package which provides support for automated testing of 
  package reverse
  
  func Reverse(s string) string {
- 	r := []rune(s)
+ 	r := []byte(s)
  	for i, j := 0, len(r)-1; i < len(r)/2; i, j = i+1, j-1 {
  		r[i], r[j] = r[j], r[i]
  	}
@@ -464,9 +539,7 @@ If you need to mock something that your code relies on in order to properly test
 
 Some frameworks and packages do exist that attempt to solve mocking for you — but the trouble is, it creates something to learn for anybody who might want to contribute to your project. Sticking to native Go code, wherever possible, is always preferable.
 
-* Goconvey Demo
-
-* Concurrency Testing Demo
+* Testing Concurrency
 
 Pipeline:
 

@@ -1,0 +1,566 @@
+Testing
+27 Apr 2017
+
+Ivan Kutuzov
+ikut@softserveinc.com
+https://discuss.7insyde.com
+https://golang.org.ua
+@arbrix
+
+* License and Materials
+
+This presentation is licensed under the [[https://creativecommons.org/licenses/by-sa/4.0/][Creative Commons Attribution-ShareAlike 4.0 International]] license.
+
+You are encouraged to remix, transform, or build upon the material, providing you give appropriate credit and distribute your contributions under the same license.
+
+If you have suggestions or corrections to this presentation, please raise [[https://github.com/GolangUA/go-training/issues][an issue on the GitHub project]].
+
+* Agenda
+
+- Recap
+- Testing package
+- Tests with flags
+- Covering
+- Mocking in Golang
+
+* Previous Sessions
+
+* On the previous session
+
+- The Go programming language
+- Basic Syntax
+- Advanced Syntax
+- OOP
+
+* Object Oriented Principles
+
+- Abstraction
+- Specialization
+- Encapsulation
+- Inheritance
+- Polymorphism
+
+* SOLID
+
+- Single Responsibility Principle
+- Open / Closed Principle
+- Liskov Substitution Principle
+- Interface Segregation Principle
+- Dependency Inversion Principle
+
+* OOP in Golang
+
+- Interface Contract
+- Interface Type
+- Interface Satisfaction
+- Interface Value
+- Type Assertation
+- Type Switches
+- Interface with Nil Pointer is Non-Nil
+
+* Interface with Nil Pointer is Non-Nil
+
+A nil interface value, which contains no value at all, is not the same as an interface value con- taining a pointer that happens to be nil. This subtle distinction creates a trap into which every Go programmer has stumbled.
+
+  const debug = true
+  func main() {
+         var buf *bytes.Buffer
+         if debug {
+             buf = new(bytes.Buffer) // enable collection of output
+         }
+         f(buf) // NOTE: subtly incorrect!
+  }
+  // If out is non-nil, output will be written to it.
+  func f(out io.Writer) {
+         // ...do something...
+         if out != nil {
+             out.Write([]byte("done!\n"))
+         }
+  }
+
+* How to fix that?
+
+* Use Interface for avoiding the assigment
+
+  var buf io.Writer
+  if debug {
+          buf = new(bytes.Buffer) // enable collection of output
+  }
+  f(buf) // OK
+
+* Type Assertation
+
+* Type Switching
+
+  func (var interface{}) {
+     switch v := var.(type) {
+     case string:
+        fmt.Println("%s", v)
+     case int:
+        fmt.Println("%d", v)
+     }
+  }
+
+* Testing package
+
+Testing your code is as important as writing it in the first place. Writing tests for the code is a good way to ensure quality and improve reliability. This article will highlight some of the Golang conventions which are followed while writing unit tests.
+
+Go comes with a testing package which provides support for automated testing of Go packages. The command go test automates the execution of any test function which is found in “*_test.go” files corresponding to the package under test.
+
+* Testing package
+
+ // content of reverse.go
+ package reverse
+ 
+ func Reverse(s string) string {
+ 	r := []byte(s)
+ 	for i, j := 0, len(r)-1; i < len(r)/2; i, j = i+1, j-1 {
+ 		r[i], r[j] = r[j], r[i]
+ 	}
+ 	return string(r)
+ }
+
+* Testing package
+
+ // content of reverse_test.go
+ package reverse
+ 
+ import "testing"
+ 
+ func TestReverseToReturnReversedInputString(t *testing.T) {
+ 	actualResult := Reverse("Hello")
+ 	var expectedResult = "olleH"
+ 
+ 	if actualResult != expectedResult {
+ 		t.Fatalf("Expected %s but got %s", expectedResult, actualResult)
+ 	}
+ }
+
+ go test -v
+ === RUN TestReverseToReturnReversedInputString
+ — — PASS: TestReverseToReturnReversedInputString (0.00s)
+ PASS
+
+* Flags and parameters
+
+When there are multiple packages and there’s a need to run all the unit tests
+
+ go test ./...
+
+The test binaries of all packages, the one in the current directory and all subdirectories, are built and then run at the same time in parallel.
+
+The -p flag can be used to specify the number of builds and tests to run in parallel.
+
+ go test -p 1 ./...
+
+constrains the tool to build and test one package at a time.
+
+If you want to run a particular test case, you can do so by using regex
+
+ go test -run TestNameRegexp
+
+* Skipping tests
+
+Some tests may require a particular context to be executed. For example, some tests may require the presence of an external command, a specific file, or an environment variable to be set. Instead of letting those tests fail when that condition is not met, it is easy to simply skip those tests:
+
+ func TestSomeProtectedResource(t *testing.T) {
+   if os.Getenv("SOME_ACCESS_TOKEN") == "" {
+     t.Skip("skipping test; $SOME_ACCESS_TOKEN not set")
+   }
+   // ... the actual test
+ }
+
+* Skipping tests
+
+If `go test -v` is called (notice the verbose flag), the output will mention the skipped test:
+
+ === RUN TestSomeProtectedResource
+ --- SKIP: TestSomeProtectedResource (0.00 seconds)
+     example_test.go:17: skipping test; $SOME_ACCESS_TOKEN not set
+
+* Flag short
+
+When a test is known to take a while to run and you’re in a hurry, you can call go test `-short` and, provided the package developer was kind enough to implement this, long-running tests will be skipped.
+
+ func TestCountMallocs(t *testing.T) {
+   if testing.Short() {
+     t.Skip("skipping malloc count in short mode")
+   }
+   // rest of test...
+ }
+
+* Test with timeout
+
+There’s also the `-timeout` flag that can be used to force a test to panic if it doesn’t finish within this duration. For example, running `go test -timeout 1s` with this test:
+
+ func TestWillTimeout(t *testing.T) {
+   time.Sleep(2 * time.Second)
+   // pass if timeout > 2s
+ }
+
+produces this output (truncated):
+
+ === RUN TestWillTimeout
+ panic: test timed out after 1s
+
+* Parallelizing tests
+
+By default, tests for a specific package are executed sequentially, but it is possible to mark some tests as safe for parallel execution using `t.Parallel()` within the test function (assuming the argument is named t, as is the convention). Only those tests marked as parallel will be executed in parallel, so having just one is kind of useless.
+
+ func TestParallel(t *testing.T) {
+   t.Parallel()
+   // actual test...
+ }
+
+The number of tests run simultaneously in parallel is the current value of *GOMAXPROCS* by default. It can be set to a specific value via the `-parallel n` flag (`go test -parallel 4`).
+
+* Parallelizing tests
+
+The tests are run with GOMAXPROCS=1. One can type `GOMAXPROCS=2 go test` to test with 2 CPUs, and then type `GOMAXPROCS=4 go test` to test with 4, but there is a better way: go test `-cpu=1,2,4` will run the tests three times, with 1, 2 and 4 as GOMAXPROCS values.
+
+The `-cpu` flag, combined with the data race detector flag `-race` is a match made in heaven (or hell, depending on how it goes). The race detector is an amazing tool that must be used for any serious concurrent development.
+
+* Test coverage
+
+Test coverage is a term that describes how much of a package's code is exercised by running the package's tests.
+
+The idea is simple: Rewrite the package's source code before compilation to add instrumentation, compile and run the modified source, and dump the statistics. The rewriting is easy to arrange because the go command controls the flow from source to test to execution.
+
+* Test coverage example
+
+package size
+
+ func Size(a int) string {
+     switch {
+     case a < 0:
+         return "negative"
+     case a == 0:
+         return "zero"
+     case a < 10:
+         return "small"
+     case a < 100:
+         return "big"
+     case a < 1000:
+         return "huge"
+     }
+     return "enormous"
+ }
+
+* Test coverage example
+
+ package size
+ 
+ import "testing"
+ 
+ type Test struct {
+     in  int
+     out string
+ }
+ 
+ var tests = []Test{
+     {-1, "negative"},
+     {5, "small"},
+ }
+ 
+ func TestSize(t *testing.T) {
+     for i, test := range tests {
+         size := Size(test.in)
+         if size != test.out {
+             t.Errorf("#%d: Size(%d)=%s; want %s", i, test.in, size, test.out)
+         }
+     }
+ }
+
+* Test coverage example
+
+ % go test -cover
+ PASS
+ coverage: 42.9% of statements
+ ok      size    0.026s
+ %
+
+* Test coverage tool in work
+
+ func Size(a int) string {
+     GoCover.Count[0] = 1
+     switch {
+     case a < 0:
+         GoCover.Count[2] = 1
+         return "negative"
+     case a == 0:
+         GoCover.Count[3] = 1
+         return "zero"
+     case a < 10:
+         GoCover.Count[4] = 1
+         return "small"
+     case a < 100:
+         GoCover.Count[5] = 1
+         return "big"
+     case a < 1000:
+         GoCover.Count[6] = 1
+         return "huge"
+     }
+     GoCover.Count[1] = 1
+     return "enormous"
+ }
+
+* Mocking in Golang
+
+Since Go is strongly typed and statically compiled, mocking and stubbing is harder to achieve and far less flexible. _Dependency_injection_ is good coding practice in most languages, but in dynamic languages, you can get away with isolating dependencies with runtime magic and with stubbing in your test code. In Go, you need to always inject your dependencies since you can’t patch things at runtime in a safe way.
+
+1. Interfaces let you define a set of methods a type (often struct) must define to be considered an implementation of that interface.
+2. When any given type implements all the methods of that interface, the Go compiler automatically knows that it is allowed to be used as that type.
+
+Consequently, it becomes critical to compose larger interfaces from smaller ones through embedding to enable control of the methods which we do want to change while still being able to test the ones we don’t want to change.
+
+* Mocking in Golang
+
+ package reader
+ 
+ import "fmt"
+ 
+ type InputServicer interface {
+ 	Data(url string) ([]byte, error)
+ }
+ 
+ type Reader struct {
+ 	Servicer InputServicer
+ }
+ 
+ func (r Reader) Fetch(url string) ([]byte, error) {
+ 	data, err := r.Servicer.Data(url)
+ 	if err != nil {
+ 		return nil, fmt.Errorf("Unable to fetch the data from url : %v", err)
+ 	}
+ 	return data, nil
+ }
+
+* Mocking in Golang
+
+ package reader
+ 
+ import (
+ 	"fmt"
+ 	"github.com/stretchr/testify/require"
+ 	"reflect"
+ 	"testing"
+ )
+ 
+ type StubInputServicer struct {}
+ 
+ func (s StubInputServicer) Data(url string) ([]byte, error) {
+ 	if url != "" {
+ 		return []byte(url), nil
+ 	}
+ 	return nil, fmt.Errorf("Error")
+ }
+ // .... ->
+
+* Mocking in Golang
+
+ // -> ...
+ func TestFetchToGetByteArray(t *testing.T) {
+ 	reader := Reader{
+ 		Servicer: StubInputServicer{},
+ 	}
+ 	actualResult, err := reader.Fetch("getInput")
+ 	require.NoError(t, err, "Expected no error")
+ 	expectedResult := []byte("getInput")
+ 	if !reflect.DeepEqual(expectedResult, actualResult) {
+ 		t.Fatalf("Expected %v but got %v", expectedResult, actualResult)
+ 	}
+ }
+ 
+ func TestFetchToReturnError(t *testing.T) {
+ 	reader := Reader{
+ 		Servicer: StubInputServicer{},
+ 	}
+ 	actualResult, err := reader.Fetch("")
+ 	expectedResult := "Unable to fetch the data from url : Error"
+ 	require.Equal(t, err.Error(), expectedResult)
+ 	require.Nil(t, actualResult)
+ }
+
+* Mocking in Golang
+
+Golang supports Higher-order functions, a function can use other functions as arguments and return values. This functionality of go can also be leveraged for testing. A simple use case wherein a function can be passed as an argument.
+
+ package fetcher
+ 
+ func fetchData(data func (url string) (string, error), url string) (string,error) {
+ 	return data(url)
+ }
+
+* Mocking in Golang
+
+ package fetcher
+ 
+ import (
+ 	"testing"
+ 	"github.com/stretchr/testify/assert"
+ )
+ 
+ var data = func(url string) (string, error) {
+ 	return url, nil
+ }
+ 
+ func TestFetch(t *testing.T) {
+ 	actualResult, err :=fetchData(data, "Test")
+ 	assert.Equal(t, "Test", actualResult)
+ 	assert.NoError(t, err)
+ }
+
+* Mocking in Golang
+
+ package handler
+ 
+ import (
+ 	"io"
+ 	"net/http"
+ )
+ type handler struct {
+ 	EndPointUrl string
+ }
+ func (h handler) Status(w http.ResponseWriter, r *http.Request) {
+ 	response, err := http.Get(h.EndPointUrl)
+ 	defer response.Body.Close()
+ 	if err != nil {
+ 		http.Error(w, "Failed to ping endpoint", http.StatusServiceUnavailable)
+ 		return
+ 	}
+ 	if response.StatusCode != http.StatusOK {
+ 		http.Error(w, "Failed to ping endpoint", response.StatusCode)
+ 		return
+ 	}
+ 	io.WriteString(w, "Status OK. Endpoint is Alive")
+ }
+
+* Mocking in Golang
+
+ package handler
+ 
+ import (
+ 	"io"
+ 	"net/http"
+ 	"net/http/httptest"
+ 	"testing"
+ )
+ func TestStatusToReturnStatusOk(t *testing.T) {
+ 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+ 		w.WriteHeader(http.StatusOK)
+ 		w.Header().Set("Content-Type", "text/plain")
+ 		io.WriteString(w, "Status OK")
+ 	}))
+ 	defer ts.Close()
+ 	r, err := http.NewRequest("GET", "/StatusCheck", nil)
+ 	if err != nil {
+ 		t.Errorf("expected no error got %v", err)
+ 	}
+ 	w := httptest.NewRecorder()
+ 	h := handler{EndPointUrl: ts.URL}
+ 	h.Status(w, r)
+    // .... ->
+
+* Mocking in Golang
+
+ // -> ...
+ 	if w.Body.String() != "Status OK. Endpoint is Alive" {
+ 		t.Fatalf("Expected Status OK but got %v", w.Body.String())
+ 	}
+ 	if w.Code != http.StatusOK {
+ 		t.Fatalf("Expected 200 but got %v", w.Code)
+ 	}
+ }
+ func TestStatusToReturnServiceUnavailableStatus(t *testing.T) {
+ 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+ 		http.Error(w, "Failed", http.StatusServiceUnavailable)
+ 	}))
+ 	defer ts.Close()
+ 	r, err := http.NewRequest("GET", "/StatusCheck", nil)
+ 	if err != nil {
+ 		t.Errorf("expected no error got %v", err)
+ 	}
+ 	w := httptest.NewRecorder()
+ 	h := handler{EndPointUrl: ts.URL}
+ 	h.Status(w, r)
+ 	if w.Code != http.StatusServiceUnavailable {
+ 		t.Fatalf("Expected %v but got %v", http.StatusServiceUnavailable, w.Code)
+ 	}
+ }
+
+* Put your tests in a different package
+
+Go insists that files in the same folder belong to the same package, that is except for `_test.go` files. Moving your test code out of the package allows you to write tests as though you were a real user of the package. You cannot fiddle around with the internals, instead you focus on the exposed interface and are always thinking about any noise that you might be adding to your API.
+
+* Internal tests go in a different file
+
+If you do need to unit test some internals, create another file with `_internal_test.go` as the suffix. Internal tests will necessarily be more brittle than your interface tests — but they’re a great way to ensure internal components are behaving, and are especially useful if you do test-driven development.
+
+* Run all tests on save
+
+Go builds and runs very quickly, so there’s little to no reason why you shouldn’t run your entire test suite every time you hit save.
+
+While you’re at it, why not run go vet, golint and goimports at the same time?
+
+* Write table driven tests
+
+Anonymous structs and composite literals allow us to write very clear and simple table tests without relying on any external package.
+The following code allows us to setup a range of tests for an as-yet unwritten `Fib` function:
+
+ var fibTests = []struct {
+   n        int // input
+   expected int // expected result
+ }{
+   {1, 1},
+   {2, 1},
+   {3, 2},
+   {4, 3},
+   {5, 5},
+   {6, 8},
+   {7, 13},
+ }
+
+* Write table driven tests
+
+Then our test function just ranges over the slice, calling the `Fib` method for each `n`, before asserting that the results are correct:
+
+ func TestFib(t *testing.T) {
+   for _, tt := range fibTests {
+     actual := Fib(tt.n)
+     if actual != tt.expected {
+       t.Errorf("Fib(%d): expected %d, actual %d", tt.n, tt.expected, actual)
+     }
+   }
+ }
+
+* Mock things using Go code
+
+If you need to mock something that your code relies on in order to properly test it, chances are it is a good candidate for an interface. Even if you’re relying on an external package that you cannot change, your code can still take an interface that the external types will satisfy.
+
+Some frameworks and packages do exist that attempt to solve mocking for you — but the trouble is, it creates something to learn for anybody who might want to contribute to your project. Sticking to native Go code, wherever possible, is always preferable.
+
+* Testing Concurrency
+
+Pipeline:
+
+ .                 | subsystem-requests |    | processing |
+ client-request -> | subsystem-requests | -> | processing | -> compose response
+                   | subsystem-requests |    | processing |
+
+For testing:
+
+- Use interfaces for each entity
+- Mocking all external elements
+- Reproduce use cases
+
+* Questions
+
+* Links
+
+- [[https://medium.com/@thejasbabu/testing-in-golang-c378b351002d#.8lggxiwvm][Testing in Golang]]
+- [[https://splice.com/blog/lesser-known-features-go-test/][Lesser-known features of go test]]
+- [[https://blog.golang.org/cover][Go Cover]]
+- [[https://nathanleclaire.com/blog/2015/10/10/interfaces-and-composition-for-effective-unit-testing-in-golang][Interfaces and Composition for Effective Unit Testing in Golang]]
+- [[https://medium.com/@matryer/5-simple-tips-and-tricks-for-writing-unit-tests-in-golang-619653f90742#.428t6brjr][5 simple tips and tricks for writing unit tests in #golang]]
+- [[https://smartystreets.com/blog/tags/testing-in-go-series][Testing in Go by example series]]
+

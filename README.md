@@ -23,36 +23,36 @@ The slides will be available at [http://127.0.0.1:3999/](http://127.0.0.1:3999/)
 # References
 
 Books:
-[https://miek.nl/go/](Learning Go)
+[Learning Go](https://miek.nl/go/)
 
 Articles:
-[https://dave.cheney.net/resources-for-new-go-programmers](Resources for new go programmers by Dave Cheney)
-[https://github.com/golang/go/wiki](Golang github wiki)
-[http://www.tapirgames.com/blog/golang-underlying-values](golang underlying values)
+[Resources for new go programmers by Dave Cheney](https://dave.cheney.net/resources-for-new-go-programmers)
+[Golang github wiki](https://github.com/golang/go/wiki)
+[golang underlying values](http://www.tapirgames.com/blog/golang-underlying-values)
 
 Practice:
-[https://tour.golang.org/welcome/1](Go Tour)
-[https://gobyexample.com](Go By Example)
-[https://play.golang.org/](Golang Playground)
-[http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/](Gothat & common mistakes)
-[https://go-traps.appspot.com](Go Traps)
-[https://github.com/plutov/practice-go](Go practice tasks)
-[http://www.exercism.io/](Exercism)
+[Go Tour](https://tour.golang.org/welcome/1)
+[Go By Example](https://gobyexample.com)
+[Golang Playground](https://play.golang.org/)
+[Gothat & common mistakes](http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/)
+[Go Traps](https://go-traps.appspot.com)
+[Go practice tasks](https://github.com/plutov/practice-go)
+[Exercism](http://www.exercism.io/)
 
 Talks:
-[https://talks.golang.org/2013/bestpractices.slide#1](Best Practices talk)
-[https://www.dotconferences.com/conference/dotgo](dotGo Talks)
+[Best Practices talk](https://talks.golang.org/2013/bestpractices.slide#1)
+[dotGo Talks](https://www.dotconferences.com/conference/dotgo)
 
 Video:
-[https://www.youtube.com/playlist?list=PL64wiCrrxh4Jisi7OcCJIUpguV_f5jGnZ](Just for func)
+[Just for func](https://www.youtube.com/playlist?list=PL64wiCrrxh4Jisi7OcCJIUpguV_f5jGnZ)
 
 Basic:
-[https://golang.org/doc/code.html](Code)
-[https://www.tutorialspoint.com/go/go_operators.htm](Go operators)
+[Code](https://golang.org/doc/code.html)
+[Go operators](https://www.tutorialspoint.com/go/go_operators.htm)
 
 Advance:
-[https://golang.org/doc/effective_go.html](Effective Go)
-[https://github.com/golang/go/wiki/CodeReviewComments](Code Style)
+[Effective Go](https://golang.org/doc/effective_go.html)
+[Code Style](https://github.com/golang/go/wiki/CodeReviewComments)
 
 Documentation:
 [https://godoc.org](Godoc)

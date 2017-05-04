@@ -1,26 +1,8 @@
 package count
 
-import (
-	"bufio"
-	"log"
-	"os"
-)
-
-func CountLines(path string) int {
-	f, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	sc := bufio.NewScanner(f)
+// ContLines count lines of content in the file
+func ContLines(path string) int {
 	var lines int
-	for sc.Scan() {
-		lines++
-	}
-	if err := sc.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	f.Close()
+	// TODO: count lines in file
 	return lines
 }

@@ -1,33 +1,17 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
 	"io"
-	"log"
 	"os"
 )
 
+// CountLines count lines in the reader
 func CountLines(r io.Reader) (int, error) {
-	sc := bufio.NewScanner(r)
-	var lines int
-	for sc.Scan() {
-		lines++
-	}
-	return lines, sc.Err()
+	return 0, nil
 }
 
+// CountFile write count of lines in the file to the stdout
 func CountFile(path string) {
-	f, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	lines, err := CountLines(f)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s\t%d\n", path, lines)
 }
 
 func main() {

@@ -147,57 +147,25 @@ Go's standard library provides mutual exclusion with *sync.Mutex* and its two me
   Lock
   Unlock
 
-* Data Races
+* sync.WaitGroup
 
-Data races are among the most common and hardest to debug types of bugs in concurrent systems. A data race occurs when two goroutines access the same variable concurrently and at least one of the accesses is a write. See the [[https://golang.org/ref/mem/][The Go Memory Model]] for details.
+A *WaitGroup* waits for a collection of goroutines to finish. The main goroutine calls *Add* to set the number of goroutines to wait for. Then each of the goroutines runs and calls *Done* when finished. At the same time, *Wait* can be used to block until all goroutines have finished.
 
-  func main() {
-  	c := make(chan bool)
-  	m := make(map[string]string)
-  	go func() {
-  		m["1"] = "a" // First conflicting access.
-  		c <- true
-  	}()
-  	m["2"] = "b" // Second conflicting access.
-  	<-c
-  	for k, v := range m {
-  		fmt.Println(k, v)
-  	}
+  var wg sync.WaitGroup
+  var urls = []string{
+      "http://www.golang.org/",
+      "http://www.google.com/",
+      "http://www.somestupidname.com/",
   }
+  for _, url := range urls {
+      wg.Add(1) // Increment the WaitGroup counter.
+      go func(url string) {// Launch a goroutine to fetch the URL.
+          defer wg.Done()// Decrement the counter when the goroutine completes.
+          http.Get(url)// Fetch the URL.
+      }(url)
+  }
+  wg.Wait()// Wait for all HTTP fetches to complete.
 
-* Data race detector
-
-To help diagnose such bugs, Go includes a built-in data race detector. To use it, add the -race flag to the go command:
-
-  $ go test -race mypkg    // to test the package
-  $ go run -race mysrc.go  // to run the source file
-  $ go build -race mycmd   // to build the command
-  $ go install -race mypkg // to install the package
-
-* Typical Data Races
-
-.link https://golang.org/doc/articles/race_detector.html#Race_on_loop_counter Race_on_loop_counter
-.link https://golang.org/doc/articles/race_detector.html#Accidentally_shared_variable Accidentally_shared_variable 
-.link https://golang.org/doc/articles/race_detector.html#Unprotected_global_variable Unprotected_global_variable
-.link https://golang.org/doc/articles/race_detector.html#Primitive_unprotected_variable Primitive_unprotected_variable
-
-* Exercise: Web Crawler
-
-In this exercise you'll use Go's concurrency features to parallelize a web crawler.
-
-Modify the *Crawl* function to fetch URLs in parallel without fetching the same URL twice.
-
-.link https://tour.golang.org/concurrency/10 exercise https://tour.golang.org/concurrency/10
-
-_Hint_: you can keep a cache of the URLs that have been fetched on a map, but maps alone are not safe for concurrent use!
-
-* Home materials
-
-This page links to resources for learning about concurrency in Go. The items are presented in order, from beginner material to advanced topics.
-
-.link https://github.com/golang/go/wiki/LearnConcurrency Learn Concurrency by Golang Wiki
-
-* Golang Concurrency Principles & Patterns
 
 * Semaphore
 
@@ -234,6 +202,60 @@ This page links to resources for learning about concurrency in Go. The items are
         go searchReplica(i)
     }
   	return <-ch
+  }
+
+* Let's write some functions
+
+  func gen(nums ...int) <-chan int {
+      out := make(chan int)
+      go func() {
+          for _, n := range nums {
+              out <- n
+          }
+          close(out)
+      }()
+      return out
+  }
+
+* And one more
+
+  func sq(in <-chan int) <-chan int {
+      out := make(chan int)
+      go func() {
+          for n := range in {
+              out <- n * n
+          }
+          close(out)
+      }()
+      return out
+  }
+
+* Merge func
+
+  func merge(cs ...<-chan int) <-chan int {
+      var wg sync.WaitGroup
+      out := make(chan int)
+  
+      // Start an output goroutine for each input channel in cs.  output
+      // copies values from c to out until c is closed, then calls wg.Done.
+      output := func(c <-chan int) {
+          for n := range c {
+              out <- n
+          }
+          wg.Done()
+      }
+      wg.Add(len(cs))
+      for _, c := range cs {
+          go output(c)
+      }
+  
+      // Start a goroutine to close out once all the output goroutines are
+      // done.  This must start after the wg.Add call.
+      go func() {
+          wg.Wait()
+          close(out)
+      }()
+      return out
   }
 
 * Stopping short
@@ -275,63 +297,13 @@ This page links to resources for learning about concurrency in Go. The items are
   	// done will be closed by the deferred call. // HL
   }
 
-* Share Memory By Mutex Struct 
+* Home materials
 
-  type Resource struct {
-  	url        string
-  	polling    bool
-  	lastPolled int64
-  }
-  type Resources struct {
-  	sync.Mutex // HL
-  	data       []*Resource
-  }
-  
-  func Poller(res *Resources) {
-  	for {
-  		// get the least recently-polled Resource
-  		// and mark it as being polled
-  		res.Lock() // HL
-  		var r *Resource
-  		for _, v := range res.data {
-  			if v.polling {
-  				continue
-  			}
-  			if r == nil || v.lastPolled < r.lastPolled {
-  				r = v
-  			}
-  		}
-  		//... ->
+This page links to resources for learning about concurrency in Go. The items are presented in order, from beginner material to advanced topics.
 
-* Share Memory By Mutex Func
+.link https://github.com/golang/go/wiki/LearnConcurrency Learn Concurrency by Golang Wiki
 
-		//->...
-		if r != nil {
-			r.polling = true
-		}
-		res.Unlock() // HL
-		if r == nil {
-			continue
-		}
-		// poll the URL
-		// update the Resource's polling and lastPolled
-		res.Lock() // HL
-		r.polling = false
-		r.lastPolled = time.Nanoseconds()
-		res.Unlock() // HL
-
-* Share Memory By Communicating
-
-  type Resource string
-  
-  func Poller(in, out chan *Resource) {
-  	for r := range in {
-  		// poll the URL
-  
-  		// send the processed Resource to out
-  		out <- r
-  	}
-  }
+* Golang Concurrency Principles & Patterns
 
 * Pipelines 
 
@@ -415,18 +387,12 @@ Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gopherc
 
 * Fan-In code
 
+A function can read from multiple inputs and proceed until all are closed by multiplexing the input channels onto a single channel that's closed when all the inputs are closed. This is called fan-in.
+
   func fanIn(input1, input2 <-chan string) <-chan string { // HL
   	c := make(chan string)
-  	go func() {
-  		for {
-  			c <- <-input1
-  		}
-  	}() // HL
-  	go func() {
-  		for {
-  			c <- <-input2
-  		}
-  	}() // HL
+  	go func() { for { c <- <-input1 }}()
+  	go func() { for { c <- <-input2 }}()
   	return c
   }
   func main() {
@@ -437,11 +403,18 @@ Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gopherc
   	fmt.Println("You're both boring; I'm leaving.")
   }
 
+* Fan-In image
+
+.image ./go-concur/gophermegaphones.jpg _ 800
+
 * Fan-In
 
 .image ./go-concur/divan-fanin.gif 500 500
 
-* Workers or Fan-Out Code1 
+* Workers or Fan-Out
+
+Multiple functions can read from the same channel until that channel is closed; this is called fan-out. This provides a way to distribute work amongst a group of workers to parallelize CPU use and I/O.
+
 
   const (
   	WORKERS    = 5
@@ -454,20 +427,17 @@ Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gopherc
   	var wg sync.WaitGroup
   	wg.Add(WORKERS)
   	tasks := make(chan int)
-  
   	for i := 0; i < WORKERS; i++ {
   		go worker(tasks, &wg)
   	}
-  
   	for i := 0; i < TASKS; i++ {
   		tasks <- i
   	}
-  
   	close(tasks)
   	wg.Wait()
   }
 
-* Workers Code2
+* Workers or Fan-Out
 
   func worker(tasks <-chan int, wg *sync.WaitGroup) {
   	defer wg.Done()
@@ -489,7 +459,7 @@ Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gopherc
   	}
   }
 
-* Workers Code3
+* Workers or Fan-Out
 
   func subworker(subtasks chan int) {
   	for {
@@ -574,6 +544,108 @@ Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gopherc
   	// Value returns the value associated with key or nil if none.
   	Value(key interface{}) interface{} // HL
   }
+
+* Share Memory By Mutex Struct 
+
+  type Resource struct {
+  	url        string
+  	polling    bool
+  	lastPolled int64
+  }
+  type Resources struct {
+  	sync.Mutex // HL
+  	data       []*Resource
+  }
+  
+  func Poller(res *Resources) {
+  	for {
+  		// get the least recently-polled Resource
+  		// and mark it as being polled
+  		res.Lock() // HL
+  		var r *Resource
+  		for _, v := range res.data {
+  			if v.polling {
+  				continue
+  			}
+  			if r == nil || v.lastPolled < r.lastPolled {
+  				r = v
+  			}
+  		}
+  		//... ->
+
+* Share Memory By Mutex Func
+
+		//->...
+		if r != nil {
+			r.polling = true
+		}
+		res.Unlock() // HL
+		if r == nil {
+			continue
+		}
+		// poll the URL
+		// update the Resource's polling and lastPolled
+		res.Lock() // HL
+		r.polling = false
+		r.lastPolled = time.Nanoseconds()
+		res.Unlock() // HL
+
+* Share Memory By Communicating
+
+  type Resource string
+  
+  func Poller(in, out chan *Resource) {
+  	for r := range in {
+  		// poll the URL
+  
+  		// send the processed Resource to out
+  		out <- r
+  	}
+  }
+
+* Data Races
+
+Data races are among the most common and hardest to debug types of bugs in concurrent systems. A data race occurs when two goroutines access the same variable concurrently and at least one of the accesses is a write. See the [[https://golang.org/ref/mem/][The Go Memory Model]] for details.
+
+  func main() {
+  	c := make(chan bool)
+  	m := make(map[string]string)
+  	go func() {
+  		m["1"] = "a" // First conflicting access.
+  		c <- true
+  	}()
+  	m["2"] = "b" // Second conflicting access.
+  	<-c
+  	for k, v := range m {
+  		fmt.Println(k, v)
+  	}
+  }
+
+* Data race detector
+
+To help diagnose such bugs, Go includes a built-in data race detector. To use it, add the -race flag to the go command:
+
+  $ go test -race mypkg    // to test the package
+  $ go run -race mysrc.go  // to run the source file
+  $ go build -race mycmd   // to build the command
+  $ go install -race mypkg // to install the package
+
+* Typical Data Races
+
+.link https://golang.org/doc/articles/race_detector.html#Race_on_loop_counter Race_on_loop_counter
+.link https://golang.org/doc/articles/race_detector.html#Accidentally_shared_variable Accidentally_shared_variable 
+.link https://golang.org/doc/articles/race_detector.html#Unprotected_global_variable Unprotected_global_variable
+.link https://golang.org/doc/articles/race_detector.html#Primitive_unprotected_variable Primitive_unprotected_variable
+
+* Exercise: Web Crawler
+
+In this exercise you'll use Go's concurrency features to parallelize a web crawler.
+
+Modify the *Crawl* function to fetch URLs in parallel without fetching the same URL twice.
+
+.link https://tour.golang.org/concurrency/10 exercise https://tour.golang.org/concurrency/10
+
+_Hint_: you can keep a cache of the URLs that have been fetched on a map, but maps alone are not safe for concurrent use!
 
 * Conclusions
 

@@ -147,57 +147,25 @@ Go's standard library provides mutual exclusion with *sync.Mutex* and its two me
   Lock
   Unlock
 
-* Data Races
+* sync.WaitGroup
 
-Data races are among the most common and hardest to debug types of bugs in concurrent systems. A data race occurs when two goroutines access the same variable concurrently and at least one of the accesses is a write. See the [[https://golang.org/ref/mem/][The Go Memory Model]] for details.
+A *WaitGroup* waits for a collection of goroutines to finish. The main goroutine calls *Add* to set the number of goroutines to wait for. Then each of the goroutines runs and calls *Done* when finished. At the same time, *Wait* can be used to block until all goroutines have finished.
 
-  func main() {
-  	c := make(chan bool)
-  	m := make(map[string]string)
-  	go func() {
-  		m["1"] = "a" // First conflicting access.
-  		c <- true
-  	}()
-  	m["2"] = "b" // Second conflicting access.
-  	<-c
-  	for k, v := range m {
-  		fmt.Println(k, v)
-  	}
+  var wg sync.WaitGroup
+  var urls = []string{
+      "http://www.golang.org/",
+      "http://www.google.com/",
+      "http://www.somestupidname.com/",
   }
+  for _, url := range urls {
+      wg.Add(1) // Increment the WaitGroup counter.
+      go func(url string) {// Launch a goroutine to fetch the URL.
+          defer wg.Done()// Decrement the counter when the goroutine completes.
+          http.Get(url)// Fetch the URL.
+      }(url)
+  }
+  wg.Wait()// Wait for all HTTP fetches to complete.
 
-* Data race detector
-
-To help diagnose such bugs, Go includes a built-in data race detector. To use it, add the -race flag to the go command:
-
-  $ go test -race mypkg    // to test the package
-  $ go run -race mysrc.go  // to run the source file
-  $ go build -race mycmd   // to build the command
-  $ go install -race mypkg // to install the package
-
-* Typical Data Races
-
-.link https://golang.org/doc/articles/race_detector.html#Race_on_loop_counter Race_on_loop_counter
-.link https://golang.org/doc/articles/race_detector.html#Accidentally_shared_variable Accidentally_shared_variable 
-.link https://golang.org/doc/articles/race_detector.html#Unprotected_global_variable Unprotected_global_variable
-.link https://golang.org/doc/articles/race_detector.html#Primitive_unprotected_variable Primitive_unprotected_variable
-
-* Exercise: Web Crawler
-
-In this exercise you'll use Go's concurrency features to parallelize a web crawler.
-
-Modify the *Crawl* function to fetch URLs in parallel without fetching the same URL twice.
-
-.link https://tour.golang.org/concurrency/10 exercise https://tour.golang.org/concurrency/10
-
-_Hint_: you can keep a cache of the URLs that have been fetched on a map, but maps alone are not safe for concurrent use!
-
-* Home materials
-
-This page links to resources for learning about concurrency in Go. The items are presented in order, from beginner material to advanced topics.
-
-.link https://github.com/golang/go/wiki/LearnConcurrency Learn Concurrency by Golang Wiki
-
-* Golang Concurrency Principles & Patterns
 
 * Semaphore
 
@@ -332,6 +300,58 @@ This page links to resources for learning about concurrency in Go. The items are
   		out <- r
   	}
   }
+
+* Data Races
+
+Data races are among the most common and hardest to debug types of bugs in concurrent systems. A data race occurs when two goroutines access the same variable concurrently and at least one of the accesses is a write. See the [[https://golang.org/ref/mem/][The Go Memory Model]] for details.
+
+  func main() {
+  	c := make(chan bool)
+  	m := make(map[string]string)
+  	go func() {
+  		m["1"] = "a" // First conflicting access.
+  		c <- true
+  	}()
+  	m["2"] = "b" // Second conflicting access.
+  	<-c
+  	for k, v := range m {
+  		fmt.Println(k, v)
+  	}
+  }
+
+* Data race detector
+
+To help diagnose such bugs, Go includes a built-in data race detector. To use it, add the -race flag to the go command:
+
+  $ go test -race mypkg    // to test the package
+  $ go run -race mysrc.go  // to run the source file
+  $ go build -race mycmd   // to build the command
+  $ go install -race mypkg // to install the package
+
+* Typical Data Races
+
+.link https://golang.org/doc/articles/race_detector.html#Race_on_loop_counter Race_on_loop_counter
+.link https://golang.org/doc/articles/race_detector.html#Accidentally_shared_variable Accidentally_shared_variable 
+.link https://golang.org/doc/articles/race_detector.html#Unprotected_global_variable Unprotected_global_variable
+.link https://golang.org/doc/articles/race_detector.html#Primitive_unprotected_variable Primitive_unprotected_variable
+
+* Exercise: Web Crawler
+
+In this exercise you'll use Go's concurrency features to parallelize a web crawler.
+
+Modify the *Crawl* function to fetch URLs in parallel without fetching the same URL twice.
+
+.link https://tour.golang.org/concurrency/10 exercise https://tour.golang.org/concurrency/10
+
+_Hint_: you can keep a cache of the URLs that have been fetched on a map, but maps alone are not safe for concurrent use!
+
+* Home materials
+
+This page links to resources for learning about concurrency in Go. The items are presented in order, from beginner material to advanced topics.
+
+.link https://github.com/golang/go/wiki/LearnConcurrency Learn Concurrency by Golang Wiki
+
+* Golang Concurrency Principles & Patterns
 
 * Pipelines 
 

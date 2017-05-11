@@ -204,6 +204,60 @@ A *WaitGroup* waits for a collection of goroutines to finish. The main goroutine
   	return <-ch
   }
 
+* Let's write some functions
+
+  func gen(nums ...int) <-chan int {
+      out := make(chan int)
+      go func() {
+          for _, n := range nums {
+              out <- n
+          }
+          close(out)
+      }()
+      return out
+  }
+
+* And one more
+
+  func sq(in <-chan int) <-chan int {
+      out := make(chan int)
+      go func() {
+          for n := range in {
+              out <- n * n
+          }
+          close(out)
+      }()
+      return out
+  }
+
+* Merge func
+
+  func merge(cs ...<-chan int) <-chan int {
+      var wg sync.WaitGroup
+      out := make(chan int)
+  
+      // Start an output goroutine for each input channel in cs.  output
+      // copies values from c to out until c is closed, then calls wg.Done.
+      output := func(c <-chan int) {
+          for n := range c {
+              out <- n
+          }
+          wg.Done()
+      }
+      wg.Add(len(cs))
+      for _, c := range cs {
+          go output(c)
+      }
+  
+      // Start a goroutine to close out once all the output goroutines are
+      // done.  This must start after the wg.Add call.
+      go func() {
+          wg.Wait()
+          close(out)
+      }()
+      return out
+  }
+
 * Stopping short
 
 - stages close their outbound channels when all the send operations are done.
@@ -241,6 +295,254 @@ A *WaitGroup* waits for a collection of goroutines to finish. The main goroutine
   	fmt.Println(<-out) // 4 or 9
   
   	// done will be closed by the deferred call. // HL
+  }
+
+* Home materials
+
+This page links to resources for learning about concurrency in Go. The items are presented in order, from beginner material to advanced topics.
+
+.link https://github.com/golang/go/wiki/LearnConcurrency Learn Concurrency by Golang Wiki
+
+* Golang Concurrency Principles & Patterns
+
+* Pipelines 
+
+*@Gmarik*, [[http://www.gmarik.info/blog/2016/experimenting-with-golang-pipelines/][Experimenting with Go pipelines]], 27 May 2016
+
+Why pipelines are great
+
+- gives a high-level overview what a system does
+- composable: allows swapping/injecting new “stages” relatively simple.
+
+Also, advice to view:
+
+*John*Graham-Cumming*, [[https://youtu.be/woCg2zaIVzQ][I came for the easy concurrency I stayed for the easy composition]], dotGo 2014
+
+* In reality, building a pipeline isn’t trivial:
+
+- handling errors isn’t always obvious: ignore or stop the whole process?
+
+* Adding concurrency takes it to the next level of complexity:
+
+- distributing expensive computation across available computational units
+- stages coordination
+- efficient resource usage: start/stop processing as soon as needed, pooling
+
+* Process composition
+
+    {generator |> heavyCalculations |> consume}
+
+* More complex example (workers)
+
+  |> {heavyCalculations} |
+  |> {heavyCalculations} |
+  |> {heavyCalculations} |
+  ...
+  {generator(N)} >|> {heavyCalculations} |> {consume}
+                  |> {heavyCalculations} |
+                  |> {heavyCalculations} |
+                  |> {heavyCalculations} |
+
+* Even more complex example: Parallel
+
+  |> {heavyCalculations} |
+  |> {heavyCalculations} |
+  |> {heavyCalculations} |
+  {generator(0..N/2)} >|> {heavyCalculations} |> {consume}
+                       |> {heavyCalculations} |
+                       |> {heavyCalculations} |
+                       |> {heavyCalculations} |
+                         -------------------------------------------------
+                       |> {heavyCalculations} |
+                       |> {heavyCalculations} |
+                       |> {heavyCalculations} |
+                       ...
+  {generator(N/2..N)} >|> {heavyCalculations} |> {consume}
+                       |> {heavyCalculations} |
+                       |> {heavyCalculations} |
+                       |> {heavyCalculations} |
+
+* Benchmarks
+
+.image ./go-concur/pipeline-results.png 500 1000
+
+* Patterns
+
+*Ivan*Danyliuk*, [[https://divan.github.io/posts/go_concurrency_visualize][Visualizing Concurrency in Go]], 24 January 2016
+Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gophercon]]
+
+
+* Simple Generator
+
+  func boring(msg string) <-chan string { // Returns receive-only channel of strings. // HL
+  	c := make(chan string)
+  	go func() { // We launch the goroutine from inside the function. // HL
+  		for i := 0; ; i++ {
+  			c <- fmt.Sprintf("%s: %d", msg, i)
+  			time.Sleep(time.Duration(rand.Intn(2e3)) * time.Millisecond)
+  		}
+  	}()
+  	return c // Return the channel to the caller. // HL
+  }
+
+* Fan-In code
+
+A function can read from multiple inputs and proceed until all are closed by multiplexing the input channels onto a single channel that's closed when all the inputs are closed. This is called fan-in.
+
+  func fanIn(input1, input2 <-chan string) <-chan string { // HL
+  	c := make(chan string)
+  	go func() { for { c <- <-input1 }}()
+  	go func() { for { c <- <-input2 }}()
+  	return c
+  }
+  func main() {
+  	c := fanIn(boring("Joe"), boring("Ann")) // HL
+  	for i := 0; i < 10; i++ {
+  		fmt.Println(<-c) // HL
+  	}
+  	fmt.Println("You're both boring; I'm leaving.")
+  }
+
+* Fan-In image
+
+.image ./go-concur/gophermegaphones.jpg _ 800
+
+* Fan-In
+
+.image ./go-concur/divan-fanin.gif 500 500
+
+* Workers or Fan-Out
+
+Multiple functions can read from the same channel until that channel is closed; this is called fan-out. This provides a way to distribute work amongst a group of workers to parallelize CPU use and I/O.
+
+
+  const (
+  	WORKERS    = 5
+  	SUBWORKERS = 3
+  	TASKS      = 20
+  	SUBTASKS   = 10
+  )
+  
+  func main() {
+  	var wg sync.WaitGroup
+  	wg.Add(WORKERS)
+  	tasks := make(chan int)
+  	for i := 0; i < WORKERS; i++ {
+  		go worker(tasks, &wg)
+  	}
+  	for i := 0; i < TASKS; i++ {
+  		tasks <- i
+  	}
+  	close(tasks)
+  	wg.Wait()
+  }
+
+* Workers or Fan-Out
+
+  func worker(tasks <-chan int, wg *sync.WaitGroup) {
+  	defer wg.Done()
+  	for {
+  		task, ok := <-tasks
+  		if !ok {
+  			return
+  		}
+  
+  		subtasks := make(chan int)
+  		for i := 0; i < SUBWORKERS; i++ {
+  			go subworker(subtasks)
+  		}
+  		for i := 0; i < SUBTASKS; i++ {
+  			task1 := task * i
+  			subtasks <- task1
+  		}
+  		close(subtasks)
+  	}
+  }
+
+* Workers or Fan-Out
+
+  func subworker(subtasks chan int) {
+  	for {
+  		task, ok := <-subtasks
+  		if !ok {
+  			return
+  		}
+  		time.Sleep(time.Duration(task) * time.Millisecond)
+  		fmt.Println(task)
+  	}
+  }
+
+* Workers or Fan-Out
+
+.image ./go-concur/divan-workers2.gif 500 500
+
+* Server Code
+
+  import "net"
+  
+  func handler(c net.Conn) {
+  	c.Write([]byte("ok"))
+  	c.Close()
+  }
+  
+  func main() {
+  	l, err := net.Listen("tcp", ":5000")
+  	if err != nil {
+  		panic(err)
+  	}
+  	for {
+  		c, err := l.Accept()
+  		if err != nil {
+  			continue
+  		}
+  		go handler(c)
+  	}
+  }
+
+* Server
+
+.image ./go-concur/divan-servers.gif 500 500
+
+* Server + Worker
+
+.image ./go-concur/divan-servers3.gif 500 500
+
+* Subscription
+
+ type Fetcher interface {
+ 	Fetch() (items []Item, next time.Time, err error)
+ }
+ 
+ func Fetch(domain string) Fetcher { /*...*/ } // fetches Items from domain
+
+  type Subscription interface {
+  	Updates() <-chan Item // stream of Items
+  	Close() error         // shuts down the stream
+  }
+  
+  func Subscribe(fetcher Fetcher) Subscription { /*...*/ } // converts Fetches to a stream
+  
+  func Merge(subs ...Subscription) Subscription { /*...*/ } // merges several streams
+
+* Context
+
+  // A Context carries a deadline, cancelation signal, and request-scoped values
+  // across API boundaries. Its methods are safe for simultaneous use by multiple
+  // goroutines.
+  type Context interface {
+  	// Done returns a channel that is closed when this Context is canceled
+  	// or times out.
+  	Done() <-chan struct{} // HL
+  
+  	// Err indicates why this context was canceled, after the Done channel
+  	// is closed.
+  	Err() error // HL
+  
+  	// Deadline returns the time when this Context will be canceled, if any.
+  	Deadline() (deadline time.Time, ok bool) // HL
+  
+  	// Value returns the value associated with key or nil if none.
+  	Value(key interface{}) interface{} // HL
   }
 
 * Share Memory By Mutex Struct 
@@ -344,256 +646,6 @@ Modify the *Crawl* function to fetch URLs in parallel without fetching the same 
 .link https://tour.golang.org/concurrency/10 exercise https://tour.golang.org/concurrency/10
 
 _Hint_: you can keep a cache of the URLs that have been fetched on a map, but maps alone are not safe for concurrent use!
-
-* Home materials
-
-This page links to resources for learning about concurrency in Go. The items are presented in order, from beginner material to advanced topics.
-
-.link https://github.com/golang/go/wiki/LearnConcurrency Learn Concurrency by Golang Wiki
-
-* Golang Concurrency Principles & Patterns
-
-* Pipelines 
-
-*@Gmarik*, [[http://www.gmarik.info/blog/2016/experimenting-with-golang-pipelines/][Experimenting with Go pipelines]], 27 May 2016
-
-Why pipelines are great
-
-- gives a high-level overview what a system does
-- composable: allows swapping/injecting new “stages” relatively simple.
-
-Also, advice to view:
-
-*John*Graham-Cumming*, [[https://youtu.be/woCg2zaIVzQ][I came for the easy concurrency I stayed for the easy composition]], dotGo 2014
-
-* In reality, building a pipeline isn’t trivial:
-
-- handling errors isn’t always obvious: ignore or stop the whole process?
-
-* Adding concurrency takes it to the next level of complexity:
-
-- distributing expensive computation across available computational units
-- stages coordination
-- efficient resource usage: start/stop processing as soon as needed, pooling
-
-* Process composition
-
-    {generator |> heavyCalculations |> consume}
-
-* More complex example (workers)
-
-  |> {heavyCalculations} |
-  |> {heavyCalculations} |
-  |> {heavyCalculations} |
-  ...
-  {generator(N)} >|> {heavyCalculations} |> {consume}
-                  |> {heavyCalculations} |
-                  |> {heavyCalculations} |
-                  |> {heavyCalculations} |
-
-* Even more complex example: Parallel
-
-  |> {heavyCalculations} |
-  |> {heavyCalculations} |
-  |> {heavyCalculations} |
-  {generator(0..N/2)} >|> {heavyCalculations} |> {consume}
-                       |> {heavyCalculations} |
-                       |> {heavyCalculations} |
-                       |> {heavyCalculations} |
-                         -------------------------------------------------
-                       |> {heavyCalculations} |
-                       |> {heavyCalculations} |
-                       |> {heavyCalculations} |
-                       ...
-  {generator(N/2..N)} >|> {heavyCalculations} |> {consume}
-                       |> {heavyCalculations} |
-                       |> {heavyCalculations} |
-                       |> {heavyCalculations} |
-
-* Benchmarks
-
-.image ./go-concur/pipeline-results.png 500 1000
-
-* Patterns
-
-*Ivan*Danyliuk*, [[https://divan.github.io/posts/go_concurrency_visualize][Visualizing Concurrency in Go]], 24 January 2016
-Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gophercon]]
-
-
-* Simple Generator
-
-  func boring(msg string) <-chan string { // Returns receive-only channel of strings. // HL
-  	c := make(chan string)
-  	go func() { // We launch the goroutine from inside the function. // HL
-  		for i := 0; ; i++ {
-  			c <- fmt.Sprintf("%s: %d", msg, i)
-  			time.Sleep(time.Duration(rand.Intn(2e3)) * time.Millisecond)
-  		}
-  	}()
-  	return c // Return the channel to the caller. // HL
-  }
-
-* Fan-In code
-
-  func fanIn(input1, input2 <-chan string) <-chan string { // HL
-  	c := make(chan string)
-  	go func() {
-  		for {
-  			c <- <-input1
-  		}
-  	}() // HL
-  	go func() {
-  		for {
-  			c <- <-input2
-  		}
-  	}() // HL
-  	return c
-  }
-  func main() {
-  	c := fanIn(boring("Joe"), boring("Ann")) // HL
-  	for i := 0; i < 10; i++ {
-  		fmt.Println(<-c) // HL
-  	}
-  	fmt.Println("You're both boring; I'm leaving.")
-  }
-
-* Fan-In
-
-.image ./go-concur/divan-fanin.gif 500 500
-
-* Workers or Fan-Out Code1 
-
-  const (
-  	WORKERS    = 5
-  	SUBWORKERS = 3
-  	TASKS      = 20
-  	SUBTASKS   = 10
-  )
-  
-  func main() {
-  	var wg sync.WaitGroup
-  	wg.Add(WORKERS)
-  	tasks := make(chan int)
-  
-  	for i := 0; i < WORKERS; i++ {
-  		go worker(tasks, &wg)
-  	}
-  
-  	for i := 0; i < TASKS; i++ {
-  		tasks <- i
-  	}
-  
-  	close(tasks)
-  	wg.Wait()
-  }
-
-* Workers Code2
-
-  func worker(tasks <-chan int, wg *sync.WaitGroup) {
-  	defer wg.Done()
-  	for {
-  		task, ok := <-tasks
-  		if !ok {
-  			return
-  		}
-  
-  		subtasks := make(chan int)
-  		for i := 0; i < SUBWORKERS; i++ {
-  			go subworker(subtasks)
-  		}
-  		for i := 0; i < SUBTASKS; i++ {
-  			task1 := task * i
-  			subtasks <- task1
-  		}
-  		close(subtasks)
-  	}
-  }
-
-* Workers Code3
-
-  func subworker(subtasks chan int) {
-  	for {
-  		task, ok := <-subtasks
-  		if !ok {
-  			return
-  		}
-  		time.Sleep(time.Duration(task) * time.Millisecond)
-  		fmt.Println(task)
-  	}
-  }
-
-* Workers or Fan-Out
-
-.image ./go-concur/divan-workers2.gif 500 500
-
-* Server Code
-
-  import "net"
-  
-  func handler(c net.Conn) {
-  	c.Write([]byte("ok"))
-  	c.Close()
-  }
-  
-  func main() {
-  	l, err := net.Listen("tcp", ":5000")
-  	if err != nil {
-  		panic(err)
-  	}
-  	for {
-  		c, err := l.Accept()
-  		if err != nil {
-  			continue
-  		}
-  		go handler(c)
-  	}
-  }
-
-* Server
-
-.image ./go-concur/divan-servers.gif 500 500
-
-* Server + Worker
-
-.image ./go-concur/divan-servers3.gif 500 500
-
-* Subscription
-
- type Fetcher interface {
- 	Fetch() (items []Item, next time.Time, err error)
- }
- 
- func Fetch(domain string) Fetcher { /*...*/ } // fetches Items from domain
-
-  type Subscription interface {
-  	Updates() <-chan Item // stream of Items
-  	Close() error         // shuts down the stream
-  }
-  
-  func Subscribe(fetcher Fetcher) Subscription { /*...*/ } // converts Fetches to a stream
-  
-  func Merge(subs ...Subscription) Subscription { /*...*/ } // merges several streams
-
-* Context
-
-  // A Context carries a deadline, cancelation signal, and request-scoped values
-  // across API boundaries. Its methods are safe for simultaneous use by multiple
-  // goroutines.
-  type Context interface {
-  	// Done returns a channel that is closed when this Context is canceled
-  	// or times out.
-  	Done() <-chan struct{} // HL
-  
-  	// Err indicates why this context was canceled, after the Done channel
-  	// is closed.
-  	Err() error // HL
-  
-  	// Deadline returns the time when this Context will be canceled, if any.
-  	Deadline() (deadline time.Time, ok bool) // HL
-  
-  	// Value returns the value associated with key or nil if none.
-  	Value(key interface{}) interface{} // HL
-  }
 
 * Conclusions
 

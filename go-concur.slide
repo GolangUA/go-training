@@ -147,6 +147,40 @@ Go's standard library provides mutual exclusion with *sync.Mutex* and its two me
   Lock
   Unlock
 
+* Data Races
+
+Data races are among the most common and hardest to debug types of bugs in concurrent systems. A data race occurs when two goroutines access the same variable concurrently and at least one of the accesses is a write. See the [[https://golang.org/ref/mem/][The Go Memory Model]] for details.
+
+  func main() {
+  	c := make(chan bool)
+  	m := make(map[string]string)
+  	go func() {
+  		m["1"] = "a" // First conflicting access.
+  		c <- true
+  	}()
+  	m["2"] = "b" // Second conflicting access.
+  	<-c
+  	for k, v := range m {
+  		fmt.Println(k, v)
+  	}
+  }
+
+* Data race detector
+
+To help diagnose such bugs, Go includes a built-in data race detector. To use it, add the -race flag to the go command:
+
+  $ go test -race mypkg    // to test the package
+  $ go run -race mysrc.go  // to run the source file
+  $ go build -race mycmd   // to build the command
+  $ go install -race mypkg // to install the package
+
+* Typical Data Races
+
+.link https://golang.org/doc/articles/race_detector.html#Race_on_loop_counter Race_on_loop_counter
+.link https://golang.org/doc/articles/race_detector.html#Accidentally_shared_variable Accidentally_shared_variable 
+.link https://golang.org/doc/articles/race_detector.html#Unprotected_global_variable Unprotected_global_variable
+.link https://golang.org/doc/articles/race_detector.html#Primitive_unprotected_variable Primitive_unprotected_variable
+
 * Exercise: Web Crawler
 
 In this exercise you'll use Go's concurrency features to parallelize a web crawler.
@@ -585,23 +619,12 @@ Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gopherc
 
 In Go, all I/O is blocking. The Go ecosystem is built around the idea that you write against a blocking interface and then handle concurrency through goroutines and channels rather than callbacks and futures.
 
-* Stack management
-
-.image ./go-concur/heap_stack.png
-
-
-* Goroutine stack growth
-
-.image ./go-concur/stack-growth.png
-
-
 * Goroutines, stack management, and an integrated network poller
 
 - In conclusion, goroutines provide a powerful abstraction that frees the programmer from worrying about thread pools or event loops.
 - The stack of a goroutine is as big as it needs to be without being concerned about sizing thread stacks or thread pools.
 - The integrated network poller lets Go programmers avoid convoluted callback styles while still leveraging the most efficient IO completion logic available from the operating system.
 - The runtime makes sure that there will be just enough threads to service all your goroutines and keep your cores active.
-
 
 * References
 

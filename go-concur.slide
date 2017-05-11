@@ -1,0 +1,289 @@
+Go Concurrency
+11 May 2017
+Tags: Go, Concurrency, principles, patterns
+
+Ivan Kutuzov
+SE, SoftServe
+http://discuss.7insyde.com
+https://golang.org.ua
+@arbrix
+
+* What we will talk about
+
+- From parallel to concurrent programming
+- Go Concurrency model
+- Principles
+- Patterns
+
+* End of Moore's Law
+
+.image ./go-concur/CPU-Moores-law.png _ 700
+
+Economist, Technology Quarterl, [[http://www.economist.com/technology-quarterly/2016-03-12/after-moores-law][After Moore's law]], 12 March 2016
+
+* CPUs are not getting faster, but they are getting wider
+
+*Dave*Cheney*, [[http://dave.cheney.net/2015/08/08/performance-without-the-event-loop][Performance without the event loop]], 8 August 2015
+
+.image ./go-concur/Ivy-Bridge_Die_Flat-HR.jpg
+Image credit: Intel
+
+* Processes (what we remember from history)
+
+- batch processing model.
+- development of multiprocessing, or time sharing, operating systems. 
+
+The operating systems maintain the illusion of concurrency by rapidly switching the attention of the CPU between active processes by recording the state of the current process, then restoring the state of another. This is called context switching.
+
+* Threads
+
+- have a share address space
+- lighter to schedule than processes -> faster to create and faster to switch between
+
+OS scheduler is universal but not optimal for each technology.
+OS can't make informed scheduling decisions, based on the Go model.
+
+* Communicating sequential processes
+[[https://en.wikipedia.org/wiki/Communicating_sequential_processes][Antony Hoare, 1978]]
+
+- Occam (May, 1983), 
+- Erlang (Armstrong, 1986),
+- Newsqueak (Pike, 1988), 
+- Concurrent ML (Reppy, 1993), 
+- Alef (Winterbottom, 1995), 
+- Limbo (Dorward, Pike, Winterbottom, 1996).
+- Go (Robert Griesemer, Rob Pike, Ken Thompson, 2007)
+- Crystal (Ary Borenszweig and Juan Wajnerman, 2011)
+- RaftLib (Jonathan Beard, 2014)
+
+* Go Scheduler
+*Daniel*Morsing*, [[http://morsmachine.dk/go-scheduler][Go Scheduler]]
+
+3 usual models for threading
+- N:1 - several userspace threads (UT) are run on one OS thread (OST)
+- 1:1 - one UT of execution matches one OST
+- M:N - (Go use it): It schedules an arbitrary number of goroutines onto an arbitrary number of OST
+
+* Go Scheduler 3 main entities
+
+.image ./go-concur/go-sched-our-cast.jpg _ 800
+
+* Go Scheduler common example
+
+.image ./go-concur/go-sched-in-motion.jpg _ 600
+
+
+* Go Scheduler (syscall)
+
+.image ./go-concur/go-sched-syscall.jpg _ 800
+
+* Go Scheduler (Stealing work)
+
+.image ./go-concur/go-sched-steal.jpg _ 800
+
+* Goroutines blocking cases
+
+- Channel send and receive operations if those operations would block.
+- The go statement, although there is no guarantee that new goroutine will be scheduled immediately.
+- Blocking syscalls like file and network operations.
+- After being stopped for a garbage collection cycle.
+
+In Go, all I/O is blocking. The Go ecosystem is built around the idea that you write against a blocking interface and then handle concurrency through goroutines and channels rather than callbacks and futures.
+
+* Stack management
+
+.image ./go-concur/heap_stack.png
+
+
+* Goroutine stack growth
+
+.image ./go-concur/stack-growth.png
+
+
+* Goroutines, stack management, and an integrated network poller
+
+- In conclusion, goroutines provide a powerful abstraction that frees the programmer from worrying about thread pools or event loops.
+- The stack of a goroutine is as big as it needs to be without being concerned about sizing thread stacks or thread pools.
+- The integrated network poller lets Go programmers avoid convoluted callback styles while still leveraging the most efficient IO completion logic available from the operating system.
+- The runtime makes sure that there will be just enough threads to service all your goroutines and keep your cores active.
+
+* Goroutines and Channels
+Goroutines are independently executing functions in the same address space.
+
+	go f()
+	go g(1, 2)
+
+Channels are typed values that allow goroutines to synchronize and exchange information.
+
+	c := make(chan int)
+	go func() { c <- 3 }()
+	n := <-c
+
+For more on the basics look at:
+
+*Rob*Pike*, [[http://talks.golang.org/2012/concurrency.slide#1][Go Concurrency Patterns]] 2012.
+
+* Semaphore
+
+code ./go-concur/main.go /SEMAPHORE OMIT/,/SEMAPHORE END OMIT/
+
+* Timeout
+
+code ./go-concur/main.go /TIMEOUT OMIT/,/TIMEOUT END OMIT/
+
+* Moving on
+
+code ./go-concur/main.go /MOVINGON OMIT/,/MOVINGON END OMIT/
+
+
+* Pipelines 
+
+*@Gmarik*, [[http://www.gmarik.info/blog/2016/experimenting-with-golang-pipelines/][Experimenting with Go pipelines]], 27 May 2016
+
+Why pipelines are great
+
+- gives a high-level overview what a system does
+- composable: allows swapping/injecting new “stages” relatively simple.
+
+Also, advice to view:
+
+*John*Graham-Cumming*, [[https://youtu.be/woCg2zaIVzQ][I came for the easy concurrency I stayed for the easy composition]], dotGo 2014
+
+* In reality, building a pipeline isn’t trivial:
+
+- handling errors isn’t always obvious: ignore or stop the whole process?
+
+* Adding concurrency takes it to the next level of complexity:
+
+- distributing expensive computation across available computational units
+- stages coordination
+- efficient resource usage: start/stop processing as soon as needed, pooling
+
+* Process composition
+
+code ./go-concur/pipeline-struct.txt /START SIMPLE OMIT/,/END SIMPLE OMIT/
+
+* More complex example (workers)
+
+code ./go-concur/pipeline-struct.txt /START CONCUR OMIT/,/END CONCUR OMIT/
+
+* Even more complex example: Parallel
+
+code ./go-concur/pipeline-struct.txt /START PARALLEL OMIT/,/END PARALLEL OMIT/
+
+* Benchmarks
+
+.image ./go-concur/pipeline-results.png 500 1000
+
+* Patterns
+
+*Ivan*Danyliuk*, [[https://divan.github.io/posts/go_concurrency_visualize][Visualizing Concurrency in Go]], 24 January 2016
+Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gophercon]]
+
+
+* Simple Generator
+
+code ./go-concur/fanin.go /BFANIN OMIT/,/BFANIN END OMIT/
+
+* Fan-In code
+
+code ./go-concur/fanin.go /FANIN OMIT/,/FANIN END OMIT/
+code ./go-concur/fanin.go /MFANIN OMIT/,/MFANIN END OMIT/
+
+* Fan-In
+
+.image ./go-concur/divan-fanin.gif 500 500
+
+* Workers or Fan-Out Code1 
+
+code ./go-concur/worker.go /MWORKER OMIT/,/MWORKER END OMIT/
+
+* Workers Code2
+
+code ./go-concur/worker.go /WORKERS OMIT/,/WORKERS END OMIT/
+
+* Workers Code3
+
+code ./go-concur/worker.go /SUBWORKER OMIT/,/SUBWORKER END OMIT/
+
+* Workers or Fan-Out
+
+.image ./go-concur/divan-workers2.gif 500 500
+
+* Server Code
+
+code ./go-concur/server.go /SERVER OMIT/,/SERVER END OMIT/
+
+* Server
+
+.image ./go-concur/divan-servers.gif 500 500
+
+* Server + Worker
+
+.image ./go-concur/divan-servers3.gif 500 500
+
+* Stopping short
+
+- stages close their outbound channels when all the send operations are done.
+- stages keep receiving values from inbound channels until those channels are closed or the senders are unblocked.
+
+code ./go-concur/main.go /STOPPINGSHORT OMIT/,/STOPPINGSHORT END OMIT/
+code ./go-concur/main.go /BUFFERCHAN OMIT/,/BUFFERCHAN END OMIT/
+
+* Explicit cancellation
+
+code ./go-concur/main.go /EXPLICIT OMIT/,/EXPLICIT END OMIT/
+
+
+* Subscription
+
+code ./go-concur/main.go /FETCHER OMIT/,/FETCHER END OMIT/
+code ./go-concur/main.go /SUBSCRIPTION OMIT/,/SUBSCRIPTION END OMIT/
+
+* Share Memory By Mutex Struct 
+
+code ./go-concur/main.go /SHAREMEM STRUCT OMIT/,/SHAREMEM STRUCT END OMIT/
+
+* Share Memory By Mutex Func
+
+code ./go-concur/main.go /SHAREMEM MUTEX OMIT/,/SHAREMEM MUTEX END OMIT/
+
+* Share Memory By Communicating
+
+code ./go-concur/sharemem-chann.go /SHAREMEM CHAN OMIT/,/SHAREMEM CHAN END OMIT/
+
+
+* Context
+
+code ./go-concur/main.go /CONTEXT OMIT/,/CONTEXT END OMIT/
+
+
+* Conclusions
+
+- Distributing work onto available computational units can lead to increased performance
+- There are many ways to distribute the work across the units through various process-compositions
+- Performance depends on the size of the data set and the composition
+- Experiment, measure and pick the best one
+- Go provides powerful means to create simple and complex compositions
+
+* References
+
+[[http://golang.org/doc/effective_go.html][Effective Go]]
+[[https://blog.golang.org/share-memory-by-communicating][Share Memory By Communicating]]: Andrew Gerrand
+[[https://blog.golang.org/go-concurrency-patterns-timing-out-and][Go Concurrency Patterns: Timing out, moving on]]: Andrew Gerrand
+[[https://blog.golang.org/concurrency-is-not-parallelism][Concurrency is not parallelism]]: Rob Pike
+[[https://talks.golang.org/2012/concurrency.slide][Go Concurrency Patterns]]: Rob Pike
+[[https://blog.golang.org/pipelines][Go Concurrency Patterns: Pipelines and cancellation]]: Sameer Ajmani
+[[https://blog.golang.org/advanced-go-concurrency-patterns][Advanced Go Concurrency Patterns]]: Sameer Ajmani
+[[https://blog.golang.org/context][Go Concurrency Patterns: Context]]: Sameer Ajmani
+[[https://blog.golang.org/race-detector][Introducing the Go Race Detector]]: Dmitry Vyukov and Andrew Gerrand
+[[http://dave.cheney.net/2015/08/08/performance-without-the-event-loop][Performance without the event loop]]: Dave Cheney
+[[https://divan.github.io/posts/go_concurrency_visualize][Visualizing Concurrency in Go]]: Ivan Danyliuk
+[[http://morsmachine.dk/go-scheduler][Go Scheduler]]: Daniel Morsing
+[[http://www.gmarik.info/blog/2016/experimenting-with-golang-pipelines/][Experimenting with Go pipelines]]: @Gmarik
+[[https://github.com/golang/go/wiki/LearnConcurrency][LearnConcurrency]]: Golang Wiki
+
+* So now you better understand the words
+
+_Parallelism_is_simply_running_things_in_parallel._
+_Concurrency_is_a_way_to_structure_your_program._

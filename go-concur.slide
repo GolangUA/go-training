@@ -214,7 +214,7 @@ This page links to resources for learning about concurrency in Go. The items are
 
 .link https://github.com/golang/go/wiki/LearnConcurrency Learn Concurrency by Golang Wiki
 
-* Golang Concurrency Patterns
+* Golang Concurrency Principles & Patterns
 
 * Semaphore
 
@@ -251,6 +251,103 @@ This page links to resources for learning about concurrency in Go. The items are
         go searchReplica(i)
     }
   	return <-ch
+  }
+
+* Stopping short
+
+- stages close their outbound channels when all the send operations are done.
+- stages keep receiving values from inbound channels until those channels are closed or the senders are unblocked.
+
+	// Consume the first value from output.
+	out := merge(c1, c2)
+	fmt.Println(<-out) // 4 or 9
+	return
+	// Since we didn't receive the second value from out,
+	// one of the output goroutines is hung attempting to send it.
+
+	c := make(chan int, 2) // buffer size 2
+	c <- 1                 // succeeds immediately
+	c <- 2                 // succeeds immediately
+	c <- 3                 // blocks until another goroutine does <-c and receives 1
+
+* Explicit cancellation
+
+  func main() {
+  	// Set up a done channel that's shared by the whole pipeline,
+  	// and close that channel when this pipeline exits, as a signal
+  	// for all the goroutines we started to exit.
+  	done := make(chan struct{}) // HL
+  	defer close(done)           // HL
+  
+  	in := gen(done, 2, 3)
+  
+  	// Distribute the sq work across two goroutines that both read from in.
+  	c1 := sq(done, in)
+  	c2 := sq(done, in)
+  
+  	// Consume the first value from output.
+  	out := merge(done, c1, c2)
+  	fmt.Println(<-out) // 4 or 9
+  
+  	// done will be closed by the deferred call. // HL
+  }
+
+* Share Memory By Mutex Struct 
+
+  type Resource struct {
+  	url        string
+  	polling    bool
+  	lastPolled int64
+  }
+  type Resources struct {
+  	sync.Mutex // HL
+  	data       []*Resource
+  }
+  
+  func Poller(res *Resources) {
+  	for {
+  		// get the least recently-polled Resource
+  		// and mark it as being polled
+  		res.Lock() // HL
+  		var r *Resource
+  		for _, v := range res.data {
+  			if v.polling {
+  				continue
+  			}
+  			if r == nil || v.lastPolled < r.lastPolled {
+  				r = v
+  			}
+  		}
+  		//... ->
+
+* Share Memory By Mutex Func
+
+		//->...
+		if r != nil {
+			r.polling = true
+		}
+		res.Unlock() // HL
+		if r == nil {
+			continue
+		}
+		// poll the URL
+		// update the Resource's polling and lastPolled
+		res.Lock() // HL
+		r.polling = false
+		r.lastPolled = time.Nanoseconds()
+		res.Unlock() // HL
+
+* Share Memory By Communicating
+
+  type Resource string
+  
+  func Poller(in, out chan *Resource) {
+  	for r := range in {
+  		// poll the URL
+  
+  		// send the processed Resource to out
+  		out <- r
+  	}
   }
 
 * Pipelines 
@@ -457,45 +554,6 @@ Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gopherc
 
 .image ./go-concur/divan-servers3.gif 500 500
 
-* Stopping short
-
-- stages close their outbound channels when all the send operations are done.
-- stages keep receiving values from inbound channels until those channels are closed or the senders are unblocked.
-
-	// Consume the first value from output.
-	out := merge(c1, c2)
-	fmt.Println(<-out) // 4 or 9
-	return
-	// Since we didn't receive the second value from out,
-	// one of the output goroutines is hung attempting to send it.
-
-	c := make(chan int, 2) // buffer size 2
-	c <- 1                 // succeeds immediately
-	c <- 2                 // succeeds immediately
-	c <- 3                 // blocks until another goroutine does <-c and receives 1
-
-* Explicit cancellation
-
-  func main() {
-  	// Set up a done channel that's shared by the whole pipeline,
-  	// and close that channel when this pipeline exits, as a signal
-  	// for all the goroutines we started to exit.
-  	done := make(chan struct{}) // HL
-  	defer close(done)           // HL
-  
-  	in := gen(done, 2, 3)
-  
-  	// Distribute the sq work across two goroutines that both read from in.
-  	c1 := sq(done, in)
-  	c2 := sq(done, in)
-  
-  	// Consume the first value from output.
-  	out := merge(done, c1, c2)
-  	fmt.Println(<-out) // 4 or 9
-  
-  	// done will be closed by the deferred call. // HL
-  }
-
 * Subscription
 
  type Fetcher interface {
@@ -512,64 +570,6 @@ Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gopherc
   func Subscribe(fetcher Fetcher) Subscription { /*...*/ } // converts Fetches to a stream
   
   func Merge(subs ...Subscription) Subscription { /*...*/ } // merges several streams
-
-* Share Memory By Mutex Struct 
-
-  type Resource struct {
-  	url        string
-  	polling    bool
-  	lastPolled int64
-  }
-  type Resources struct {
-  	sync.Mutex // HL
-  	data       []*Resource
-  }
-  
-  func Poller(res *Resources) {
-  	for {
-  		// get the least recently-polled Resource
-  		// and mark it as being polled
-  		res.Lock() // HL
-  		var r *Resource
-  		for _, v := range res.data {
-  			if v.polling {
-  				continue
-  			}
-  			if r == nil || v.lastPolled < r.lastPolled {
-  				r = v
-  			}
-  		}
-  		//... ->
-
-* Share Memory By Mutex Func
-
-		//->...
-		if r != nil {
-			r.polling = true
-		}
-		res.Unlock() // HL
-		if r == nil {
-			continue
-		}
-		// poll the URL
-		// update the Resource's polling and lastPolled
-		res.Lock() // HL
-		r.polling = false
-		r.lastPolled = time.Nanoseconds()
-		res.Unlock() // HL
-
-* Share Memory By Communicating
-
-  type Resource string
-  
-  func Poller(in, out chan *Resource) {
-  	for r := range in {
-  		// poll the URL
-  
-  		// send the processed Resource to out
-  		out <- r
-  	}
-  }
 
 * Context
 

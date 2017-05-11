@@ -11,9 +11,10 @@ https://golang.org.ua
 * What we will talk about
 
 - From parallel to concurrent programming
-- Go Concurrency model
+- Go Concurrency Basic
 - Principles
 - Patterns
+- Go Concurrency model
 
 * End of Moore's Law
 
@@ -107,34 +108,150 @@ In Go, all I/O is blocking. The Go ecosystem is built around the idea that you w
 - The integrated network poller lets Go programmers avoid convoluted callback styles while still leveraging the most efficient IO completion logic available from the operating system.
 - The runtime makes sure that there will be just enough threads to service all your goroutines and keep your cores active.
 
+* Golang Concurrency Basic
+
 * Goroutines and Channels
 Goroutines are independently executing functions in the same address space.
 
 	go f()
 	go g(1, 2)
 
-Channels are typed values that allow goroutines to synchronize and exchange information.
+Channels are a typed conduit through which you can send and receive values with the channel operator, *<-*
 
-	c := make(chan int)
-	go func() { c <- 3 }()
-	n := <-c
+  c := make(chan int) // Like maps and slices, channels must be created before use
+  go func() {
+    c <- 3 // Send 3 to channel c.
+  }()
+  n := <-c // Receive from c, and assign value to n.
 
-For more on the basics look at:
+Channels can be buffered. Provide the buffer length as the second argument to make to initialize a _buffered_ channel:
 
-*Rob*Pike*, [[http://talks.golang.org/2012/concurrency.slide#1][Go Concurrency Patterns]] 2012.
+  ch := make(chan int, 100)
+
+For more on the basics look at: *Rob*Pike*, [[http://talks.golang.org/2012/concurrency.slide#1][Go Concurrency Patterns]] 2012.
+
+* Range and Close
+
+A sender can *close* a channel to indicate that no more values will be sent. Receivers can test whether a channel has been closed by assigning a second parameter to the receive expression: afte
+
+  v, ok := <-ch
+
+*ok* is false if there are no more values to receive and the channel is *closed*
+
+The loop *for*i*:=*range*c* receives values from the channel repeatedly until it is closed
+
+* Select
+
+The *select* statement lets a goroutine wait on multiple communication operations
+
+A *select* blocks until one of its cases can run, then it executes that case. It chooses one at random if multiple are ready.
+
+  select {
+  case c <- x:
+    x, y = y, x+y
+  case <-quit:
+    fmt.Println("quit")
+    return
+  }
+
+* Default Selection
+
+The *default* case in a *select* is run if no other case is ready.
+
+Use a *default* case to try a send or receive without blocking:
+
+  select {
+  case i := <-c:
+      // use i
+  default:
+      // receiving from c would block
+  }
+
+* Exercise: Equivalent Binary Trees
+
+There can be many different binary trees with the same sequence of values stored at the leaves. For example, here are two binary trees storing the sequence 1, 1, 2, 3, 5, 8, 13.
+
+.image ./go-concur/tree.png _ 800
+
+A function to check whether two binary trees store the same sequence is quite complex in most languages. We'll use Go's concurrency and channels to write a simple solution.
+
+* Continue exercise:
+
+This example uses the tree package, which defines the type:
+
+  type Tree struct {
+      Left  *Tree
+      Value int
+      Right *Tree
+  }
+
+.link https://tour.golang.org/concurrency/8 exercise: https://tour.golang.org/concurrency/8
+
+* sync.Mutex
+
+But what if we don't need communication? What if we just want to make sure only one goroutine can access a variable at a time to avoid conflicts?
+
+This concept is called _mutual_exclusion_, and the conventional name for the data structure that provides it is _mutex_
+
+Go's standard library provides mutual exclusion with *sync.Mutex* and its two methods:
+
+  Lock
+  Unlock
+
+* Exercise: Web Crawler
+
+In this exercise you'll use Go's concurrency features to parallelize a web crawler.
+
+Modify the *Crawl* function to fetch URLs in parallel without fetching the same URL twice.
+
+.link https://tour.golang.org/concurrency/10 exercise https://tour.golang.org/concurrency/10
+
+_Hint_: you can keep a cache of the URLs that have been fetched on a map, but maps alone are not safe for concurrent use!
+
+* Home materials
+
+This page links to resources for learning about concurrency in Go. The items are presented in order, from beginner material to advanced topics.
+
+.link https://github.com/golang/go/wiki/LearnConcurrency Learn Concurrency by Golang Wiki
+
+* Golang Concurrency Patterns
 
 * Semaphore
 
-code ./go-concur/main.go /SEMAPHORE OMIT/,/SEMAPHORE END OMIT/
+  func execute() {
+  	s := make(chan struct{}, 3)
+  
+  	for i := 0; i < 4; i++ {
+  		go doStuff(s)
+  	}
+  }
+  
+  //....
+  func doStuff(s chan struct{}) {
+  	s <- struct{}{}
+  	defer func() { <-s }()
+  	//.. DO STUFF
+  }
 
 * Timeout
 
-code ./go-concur/main.go /TIMEOUT OMIT/,/TIMEOUT END OMIT/
+	select {
+	case <-ch:
+		// a read from ch has occurred
+	case <-time.After(5 * time.Second): // HL
+		// the read from ch has timed out
+	}
 
 * Moving on
 
-code ./go-concur/main.go /MOVINGON OMIT/,/MOVINGON END OMIT/
-
+  func findFirstResult(conns []Conn, query string) Result {
+    ch := make(chan Result)
+    searchReplica := func(i int) { c <- conns[i].Search(query) }
+    for i := range replicas {
+        go searchReplica(i)
+    }
+  	return <-ch
+  }
 
 * Pipelines 
 
@@ -161,15 +278,37 @@ Also, advice to view:
 
 * Process composition
 
-code ./go-concur/pipeline-struct.txt /START SIMPLE OMIT/,/END SIMPLE OMIT/
+    {generator |> heavyCalculations |> consume}
 
 * More complex example (workers)
 
-code ./go-concur/pipeline-struct.txt /START CONCUR OMIT/,/END CONCUR OMIT/
+  |> {heavyCalculations} |
+  |> {heavyCalculations} |
+  |> {heavyCalculations} |
+  ...
+  {generator(N)} >|> {heavyCalculations} |> {consume}
+                  |> {heavyCalculations} |
+                  |> {heavyCalculations} |
+                  |> {heavyCalculations} |
 
 * Even more complex example: Parallel
 
-code ./go-concur/pipeline-struct.txt /START PARALLEL OMIT/,/END PARALLEL OMIT/
+  |> {heavyCalculations} |
+  |> {heavyCalculations} |
+  |> {heavyCalculations} |
+  {generator(0..N/2)} >|> {heavyCalculations} |> {consume}
+                       |> {heavyCalculations} |
+                       |> {heavyCalculations} |
+                       |> {heavyCalculations} |
+                         -------------------------------------------------
+                       |> {heavyCalculations} |
+                       |> {heavyCalculations} |
+                       |> {heavyCalculations} |
+                       ...
+  {generator(N/2..N)} >|> {heavyCalculations} |> {consume}
+                       |> {heavyCalculations} |
+                       |> {heavyCalculations} |
+                       |> {heavyCalculations} |
 
 * Benchmarks
 
@@ -183,12 +322,40 @@ Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gopherc
 
 * Simple Generator
 
-code ./go-concur/fanin.go /BFANIN OMIT/,/BFANIN END OMIT/
+  func boring(msg string) <-chan string { // Returns receive-only channel of strings. // HL
+  	c := make(chan string)
+  	go func() { // We launch the goroutine from inside the function. // HL
+  		for i := 0; ; i++ {
+  			c <- fmt.Sprintf("%s: %d", msg, i)
+  			time.Sleep(time.Duration(rand.Intn(2e3)) * time.Millisecond)
+  		}
+  	}()
+  	return c // Return the channel to the caller. // HL
+  }
 
 * Fan-In code
 
-code ./go-concur/fanin.go /FANIN OMIT/,/FANIN END OMIT/
-code ./go-concur/fanin.go /MFANIN OMIT/,/MFANIN END OMIT/
+  func fanIn(input1, input2 <-chan string) <-chan string { // HL
+  	c := make(chan string)
+  	go func() {
+  		for {
+  			c <- <-input1
+  		}
+  	}() // HL
+  	go func() {
+  		for {
+  			c <- <-input2
+  		}
+  	}() // HL
+  	return c
+  }
+  func main() {
+  	c := fanIn(boring("Joe"), boring("Ann")) // HL
+  	for i := 0; i < 10; i++ {
+  		fmt.Println(<-c) // HL
+  	}
+  	fmt.Println("You're both boring; I'm leaving.")
+  }
 
 * Fan-In
 
@@ -196,15 +363,64 @@ code ./go-concur/fanin.go /MFANIN OMIT/,/MFANIN END OMIT/
 
 * Workers or Fan-Out Code1 
 
-code ./go-concur/worker.go /MWORKER OMIT/,/MWORKER END OMIT/
+  const (
+  	WORKERS    = 5
+  	SUBWORKERS = 3
+  	TASKS      = 20
+  	SUBTASKS   = 10
+  )
+  
+  func main() {
+  	var wg sync.WaitGroup
+  	wg.Add(WORKERS)
+  	tasks := make(chan int)
+  
+  	for i := 0; i < WORKERS; i++ {
+  		go worker(tasks, &wg)
+  	}
+  
+  	for i := 0; i < TASKS; i++ {
+  		tasks <- i
+  	}
+  
+  	close(tasks)
+  	wg.Wait()
+  }
 
 * Workers Code2
 
-code ./go-concur/worker.go /WORKERS OMIT/,/WORKERS END OMIT/
+  func worker(tasks <-chan int, wg *sync.WaitGroup) {
+  	defer wg.Done()
+  	for {
+  		task, ok := <-tasks
+  		if !ok {
+  			return
+  		}
+  
+  		subtasks := make(chan int)
+  		for i := 0; i < SUBWORKERS; i++ {
+  			go subworker(subtasks)
+  		}
+  		for i := 0; i < SUBTASKS; i++ {
+  			task1 := task * i
+  			subtasks <- task1
+  		}
+  		close(subtasks)
+  	}
+  }
 
 * Workers Code3
 
-code ./go-concur/worker.go /SUBWORKER OMIT/,/SUBWORKER END OMIT/
+  func subworker(subtasks chan int) {
+  	for {
+  		task, ok := <-subtasks
+  		if !ok {
+  			return
+  		}
+  		time.Sleep(time.Duration(task) * time.Millisecond)
+  		fmt.Println(task)
+  	}
+  }
 
 * Workers or Fan-Out
 
@@ -212,7 +428,26 @@ code ./go-concur/worker.go /SUBWORKER OMIT/,/SUBWORKER END OMIT/
 
 * Server Code
 
-code ./go-concur/server.go /SERVER OMIT/,/SERVER END OMIT/
+  import "net"
+  
+  func handler(c net.Conn) {
+  	c.Write([]byte("ok"))
+  	c.Close()
+  }
+  
+  func main() {
+  	l, err := net.Listen("tcp", ":5000")
+  	if err != nil {
+  		panic(err)
+  	}
+  	for {
+  		c, err := l.Accept()
+  		if err != nil {
+  			continue
+  		}
+  		go handler(c)
+  	}
+  }
 
 * Server
 
@@ -227,36 +462,135 @@ code ./go-concur/server.go /SERVER OMIT/,/SERVER END OMIT/
 - stages close their outbound channels when all the send operations are done.
 - stages keep receiving values from inbound channels until those channels are closed or the senders are unblocked.
 
-code ./go-concur/main.go /STOPPINGSHORT OMIT/,/STOPPINGSHORT END OMIT/
-code ./go-concur/main.go /BUFFERCHAN OMIT/,/BUFFERCHAN END OMIT/
+	// Consume the first value from output.
+	out := merge(c1, c2)
+	fmt.Println(<-out) // 4 or 9
+	return
+	// Since we didn't receive the second value from out,
+	// one of the output goroutines is hung attempting to send it.
+
+	c := make(chan int, 2) // buffer size 2
+	c <- 1                 // succeeds immediately
+	c <- 2                 // succeeds immediately
+	c <- 3                 // blocks until another goroutine does <-c and receives 1
 
 * Explicit cancellation
 
-code ./go-concur/main.go /EXPLICIT OMIT/,/EXPLICIT END OMIT/
-
+  func main() {
+  	// Set up a done channel that's shared by the whole pipeline,
+  	// and close that channel when this pipeline exits, as a signal
+  	// for all the goroutines we started to exit.
+  	done := make(chan struct{}) // HL
+  	defer close(done)           // HL
+  
+  	in := gen(done, 2, 3)
+  
+  	// Distribute the sq work across two goroutines that both read from in.
+  	c1 := sq(done, in)
+  	c2 := sq(done, in)
+  
+  	// Consume the first value from output.
+  	out := merge(done, c1, c2)
+  	fmt.Println(<-out) // 4 or 9
+  
+  	// done will be closed by the deferred call. // HL
+  }
 
 * Subscription
 
-code ./go-concur/main.go /FETCHER OMIT/,/FETCHER END OMIT/
-code ./go-concur/main.go /SUBSCRIPTION OMIT/,/SUBSCRIPTION END OMIT/
+ type Fetcher interface {
+ 	Fetch() (items []Item, next time.Time, err error)
+ }
+ 
+ func Fetch(domain string) Fetcher { /*...*/ } // fetches Items from domain
+
+  type Subscription interface {
+  	Updates() <-chan Item // stream of Items
+  	Close() error         // shuts down the stream
+  }
+  
+  func Subscribe(fetcher Fetcher) Subscription { /*...*/ } // converts Fetches to a stream
+  
+  func Merge(subs ...Subscription) Subscription { /*...*/ } // merges several streams
 
 * Share Memory By Mutex Struct 
 
-code ./go-concur/main.go /SHAREMEM STRUCT OMIT/,/SHAREMEM STRUCT END OMIT/
+  type Resource struct {
+  	url        string
+  	polling    bool
+  	lastPolled int64
+  }
+  type Resources struct {
+  	sync.Mutex // HL
+  	data       []*Resource
+  }
+  
+  func Poller(res *Resources) {
+  	for {
+  		// get the least recently-polled Resource
+  		// and mark it as being polled
+  		res.Lock() // HL
+  		var r *Resource
+  		for _, v := range res.data {
+  			if v.polling {
+  				continue
+  			}
+  			if r == nil || v.lastPolled < r.lastPolled {
+  				r = v
+  			}
+  		}
+  		//... ->
 
 * Share Memory By Mutex Func
 
-code ./go-concur/main.go /SHAREMEM MUTEX OMIT/,/SHAREMEM MUTEX END OMIT/
+		//->...
+		if r != nil {
+			r.polling = true
+		}
+		res.Unlock() // HL
+		if r == nil {
+			continue
+		}
+		// poll the URL
+		// update the Resource's polling and lastPolled
+		res.Lock() // HL
+		r.polling = false
+		r.lastPolled = time.Nanoseconds()
+		res.Unlock() // HL
 
 * Share Memory By Communicating
 
-code ./go-concur/sharemem-chann.go /SHAREMEM CHAN OMIT/,/SHAREMEM CHAN END OMIT/
-
+  type Resource string
+  
+  func Poller(in, out chan *Resource) {
+  	for r := range in {
+  		// poll the URL
+  
+  		// send the processed Resource to out
+  		out <- r
+  	}
+  }
 
 * Context
 
-code ./go-concur/main.go /CONTEXT OMIT/,/CONTEXT END OMIT/
-
+  // A Context carries a deadline, cancelation signal, and request-scoped values
+  // across API boundaries. Its methods are safe for simultaneous use by multiple
+  // goroutines.
+  type Context interface {
+  	// Done returns a channel that is closed when this Context is canceled
+  	// or times out.
+  	Done() <-chan struct{} // HL
+  
+  	// Err indicates why this context was canceled, after the Done channel
+  	// is closed.
+  	Err() error // HL
+  
+  	// Deadline returns the time when this Context will be canceled, if any.
+  	Deadline() (deadline time.Time, ok bool) // HL
+  
+  	// Value returns the value associated with key or nil if none.
+  	Value(key interface{}) interface{} // HL
+  }
 
 * Conclusions
 

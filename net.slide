@@ -1,6 +1,5 @@
-Standard library, Net package
-Internal SoftServe Golang Training
-05 Jan 2017
+Network, Net package
+16 May 2017
 
 Ivan Kutuzov
 ikut@softserveinc.com
@@ -18,11 +17,52 @@ If you have suggestions or corrections to this presentation, please raise [[http
 
 * Agenda
 
+- Recap
 - Overview Standard Library
 - Walkthrough series
 - Net package
 - Net/http package
 - Other net/... packages
+
+* Recap
+
+- Goals of programming
+
+* Recap
+
+- Goals of programming
+  - Reduce costs
+  - Increase revenue
+
+* Recap
+
+- Goals of programming
+  - Reduce costs
+  - Increase revenue
+
+How to achieve this goals?
+
+* How to achieve programming goals
+
+- Understanding the problem (problem defenition)
+
+* How to achieve programming goals
+
+- Understanding the problem (problem defenition)
+- Understanding the domain (all related technologies and existing solutions)
+
+* How to achieve programming goals
+
+- Understanding the problem (problem defenition)
+- Understanding the domain (all related technologies and existing solutions)
+- Understanding general theory (data structures and algorithms / patterns)
+
+* How to achieve programming goals
+
+- Understanding the problem (problem defenition)
+- Understanding the domain (all related technologies and existing solutions)
+- Understanding general theory (data structures and algorithms / patterns)
+- Understanding toolset (programmin language)
 
 * Standard Library
 

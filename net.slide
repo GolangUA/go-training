@@ -1,6 +1,5 @@
-Standard library, Net package
-Internal SoftServe Golang Training
-05 Jan 2017
+Network, Net package
+16 May 2017
 
 Ivan Kutuzov
 ikut@softserveinc.com
@@ -18,66 +17,86 @@ If you have suggestions or corrections to this presentation, please raise [[http
 
 * Agenda
 
-- Overview Standard Library
-- Walkthrough series
+- Recap
+- Networking tasks
 - Net package
 - Net/http package
 - Other net/... packages
+- Testing Network
 
-* Standard Library
+* Recap
 
-One of the valuable things in Golang (about 140 packages)
-- [[http://thenewstack.io/understanding-golang-packages/][Understanding Golang Packages]]
-- [[https://golang.org/pkg/][pkg]]
-- [[https://golang.org/src][src]]
+- Goals of programming
 
-* Walkthrough
+* Recap
 
-A series of walkthroughs to help you understand the Go standard library better.
+- Goals of programming
+  - Reduce costs
+  - Increase revenue
 
-[[https://medium.com/go-walkthrough][Go Walkthrough]]
+* Recap
 
-* Go Walkthrough: io package
+- Goals of programming
+  - Reduce costs
+  - Increase revenue
 
-Go is a programming language built for working with bytes. Whether you have lists of bytes, streams of bytes, or individual bytes, Go makes it easy to process. From these simple primitives we build our abstractions and services.
+How to achieve this goals?
 
-[[https://medium.com/go-walkthrough/go-walkthrough-io-package-8ac5e95a9fbd][link]]
+* How to achieve programming goals
 
-* Go Walkthrough: bytes + strings packages
+- Understanding the problem (problem defenition)
 
-Sometimes we need to work with bounded, in-memory byte slices instead. While working with a list of bytes seems simple enough, there are a lot of edge cases and common operations that make using the bytes package worthwhile.
+* How to achieve programming goals
 
-[[https://medium.com/go-walkthrough/go-walkthrough-bytes-strings-packages-499be9f4b5bd][link]]
+- Understanding the problem (problem defenition)
+- Understanding the domain (all related technologies and existing solutions)
 
-* Go Walkthrough: encoding package
+* How to achieve programming goals
 
-Bytes alone don’t convey much meaning, however, once we encode data structures on top of those bytes then we can build truly useful applications.
+- Understanding the problem (problem defenition)
+- Understanding the domain (all related technologies and existing solutions)
+- Understanding general theory (data structures and algorithms / patterns)
 
-[[https://medium.com/go-walkthrough/go-walkthrough-encoding-package-bc5e912232d][link]]
+* How to achieve programming goals
 
-* Go Walkthrough: encoding/json package
+- Understanding the problem (problem defenition)
+- Understanding the domain (all related technologies and existing solutions)
+- Understanding general theory (data structures and algorithms / patterns)
+- Understanding toolset (programmin language)
 
-For better or for worse, JSON is the encoding of the Internet. Its formal definition is small enough that you could write it on the back of a napkin but yet it can encode strings, numbers, booleans, nulls, maps, and arrays. 
+* Network
 
-[[https://medium.com/go-walkthrough/go-walkthrough-encoding-json-package-9681d1d37a8f][link]]
+* Concepts in web principles
 
-* Go Walkthrough: encoding/binary
+- Request: request data from users, including POST, GET, Cookie and URL.+
+- Response: response data from server to clients.
+- Conn: connections between clients and servers.
+- Handler: Request handling logic and response generation.
 
-When you need to squeeze every last bit or CPU cycle out of your protocol, one of the best tools is the encoding/binary package. It operates on the lowest level and is built for working with binary protocols.
+* Standard http workflow
 
-[[https://medium.com/go-walkthrough/go-walkthrough-encoding-binary-96dc5d4abb5d][link]]
+.image ./img/how-web-works.png _ 800
 
-* Go Walkthrough: strconv
+* Two general tasks
 
-Formatting & parsing primitive values in Go is a common task. You probably first dipped your toes into the fmt package when you started Go, however, there’s a less commonly used package for basic formatting that’s more efficient and preserves compiler type checking.
+- Client
 
-[[https://medium.com/go-walkthrough/go-walkthrough-strconv-7a24632a9e73][link]]
+  resp, err := http.Get("http://example.com/")
+  ...
+  resp, err := http.Post("http://example.com/upload", "image/jpeg", &buf)
+  ...
+  resp, err := http.PostForm("http://example.com/form",
+  	url.Values{"key": {"Value"}, "id": {"123"}})
 
-* Go Walkthrough: fmt
+- Server
 
-The fmt package builds on top of our knowledge of primitive formatting options but packages it in a way that’s easier to use.
-
-[[https://medium.com/go-walkthrough/go-walkthrough-fmt-55a14bbbfc53][link]]
+  http.Handle("/foo", fooHandler)
+  
+  http.HandleFunc("/bar", func(w http.ResponseWriter, r *http.Request) {
+  	fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+  })
+  
+  log.Fatal(http.ListenAndServe(":8080", nil))
 
 * Net package
 
@@ -218,15 +237,13 @@ More control over the server's behavior is available by creating a custom Server
 
 * net/http (handler)
 
+  type Handler interface {
+      ServeHTTP(ResponseWriter, *Request)
+  }
+
 A Handler responds to an HTTP request.
 
 ServeHTTP should write reply headers and data to the ResponseWriter and then return. Returning signals that the request is finished; it is not valid to use the ResponseWriter or read from the Request.Body after or concurrently with the completion of the ServeHTTP call.
-
-Depending on the HTTP client software, HTTP protocol version, and any intermediaries between the client and the Go server, it may not be possible to read from the Request.Body after writing to the ResponseWriter. Cautious handlers should read the Request.Body first, and then reply.
-
-Except for reading the body, handlers should not modify the provided Request.
-
-If ServeHTTP panics, the server (the caller of ServeHTTP) assumes that the effect of the panic was isolated to the active request. It recovers the panic, logs a stack trace to the server error log, and hangs up the connection.
 
 * net/http (handler continue)
 
@@ -288,6 +305,45 @@ Third party packages
  }
  
  const templateStr = `...
+
+* Variety of techniques
+
+- TCP / UDP
+- HTTP / HTTP/2
+- Socket
+- RPC
+- REST
+
+* WebSockets
+
+- Only one TCP connection for a single web client.
+- WebSocket servers can push data to web clients.
+- Lightweight header to reduce data transmission overhead.
+
+.link https://astaxie.gitbooks.io/build-web-application-with-golang/en/08.2.html Build web application with Golang
+
+* REST
+
+REpresentational State Transfer
+
+- Every URI represents a resource.
+- There is a representation layer for transferring resources between clients and servers.
+- Clients use four HTTP methods to implement "Presentation Layer State Transfer", allowing them to operate on remote resources.
+
+* RPC
+
+RPC is based around the idea of defining a service, specifying the methods that can be called remotely with their parameters and return types. On the server side, the server implements this interface and runs a RPC server to handle client calls. On the client side, the client has a stub (referred to as just a client in some languages) that provides the same methods as the server.
+
+- Functions are exported (capitalized).
+- Functions must have two arguments with exported types.
+- The first argument is for receiving from the client, and the second one has to be a pointer and is for replying to the client.
+- Functions must have a return value of error type.
+
+  func (t *T) MethodName(argType T1, replyType *T2) error
+
+* Not only existing protocol
+
+We are able to create a new ones.
 
 * net/textproto
 
@@ -351,6 +407,25 @@ To use a Pipeline p to manage multiple clients on a connection, each client shou
  p.EndResponse(id)	// notify Pipeline that response is read
 
 A pipelined server can use the same calls to ensure that responses computed in parallel are written in the correct order.
+
+* Network Summary
+
+- Standard packages in Go provide all necessaries for working with network
+ - as client
+ - as server
+ - using TCP or UDP
+ - using WebSockets
+ - using REST
+ - using RPC
+ - using HTTP or HTTP/2
+- possability of control on each level
+ - transport
+ - client
+ - listener
+ - connection
+ - server
+
+
 
 * Testing & Profiling
 
@@ -450,5 +525,19 @@ To view all available profiles, open http://localhost:6060/debug/pprof/ in your 
 2. Create HTTP Proxy server
 3. Create simple CRUD server (with saving data in DB (PostgreSQL, MySQL, MongoDB))
 4. Create simple chat server on TCP base
+
+* Resources
+
+- [[http://thenewstack.io/understanding-golang-packages/][Understanding Golang Packages]]
+- [[https://golang.org/pkg/][Golang std pkg]]
+- [[https://golang.org/src][Golang std src]]
+- Alan A. A. Donovan and Brian W. Kernighan 'The Go Programming Language'
+- [[http://networkstatic.net/golang-network-ops/][Golang for Network Ops]]
+- [[http://www.golang-book.com/books/intro][An Introduction to Programming in Go]]
+- [[http://blog.scottlowe.org/2015/01/26/using-git-with-github/][Using Git with Github]]
+- [[http://www.minaandrawos.com/2016/05/14/udp-vs-tcp-in-golang/][UDP vs TCP in Go]]
+- [[https://astaxie.gitbooks.io/build-web-application-with-golang/en/03.1.html][Web App with Golang]]
+- [[http://soryy.com/blog/2014/not-another-go-net-http-tutorial/][Not Another Go/Golang net/http Tutorial]]
+
 
 * Questions?

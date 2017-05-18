@@ -1,0 +1,540 @@
+Performance in Go
+Lviv, UA
+18 May 2017
+
+Ivan Kutuzov
+http://golang.org.ua/
+http://golang-ua.slack.com/
+http://gophers.in.ua/
+@arbrix
+
+* License and Materials
+
+This presentation is licensed under the [[https://creativecommons.org/licenses/by-sa/4.0/][Creative Commons Attribution-ShareAlike 4.0 International]] licence.
+
+This materials was prepared by Dave Cheney.
+
+The materials for this presentation are available on GitHub:
+
+.link https://github.com/davecheney/high-performance-go-workshop
+
+You are encouraged to remix, transform, or build upon the material, providing you give appropriate credit and distribute your contributions under the same license.
+
+If you have suggestions or corrections to this presentation, please raise [[https://github.com/davecheney/high-performance-go-workshop/isues][an issue on the GitHub project]].
+
+* Agenda
+
+Today we are going to cover three areas:
+
+- Recap
+- What does performance mean, what is possible?
+- Benchmarking
+- Performance measurement and profiling
+
+* Recap
+
+We need more practice
+.link http://adventofcode.com
+.link http://gocode.io/
+.link https://www.codingame.com/
+.link https://coderbyte.com/
+.link http://users.csc.calpoly.edu/~jdalbey/103/Projects/ProgrammingPractice.html
+.link http://www.w3resource.com/c-programming-exercises/
+.link http://www.codeabbey.com/index/task_list
+
+* Tasks
+
+- Elementary
+- Array, Strings
+- Intermediate
+- Advance
+
+* What does performance mean?
+
+Before we talk about writing high performance code, we need to talk about the hardware that will execute this code.
+
+What are its properties and how have they changed over time?
+
+As software authors we have benefited from Moore's Law, the doubling of the number of available transistors on a chip every 18 months, for 50 years.
+
+No other industry has experienced a _six_order_of_magnitude_ improvement in their tools in the space of a lifetime.
+
+* Network and disk I/O are still expensive
+
+Network and disk I/O are still expensive, so expensive that the Go runtime will schedule something else while those operations are in progress.
+
+.image images/media-20160803.jpg
+
+* Benchmarking
+
+* Benchmarking
+
+Before you can begin to tune your application, you need to establish a reliable baseline to measure the impact of your change to know if you're making things better, or worse.
+
+In other words, _"Don't_guess,_measure"_
+
+This section focuses on how to construct useful benchmarks using the Go testing framework, and gives practical tips for avoiding the pitfalls.
+
+Benchmarking is closely related to profiling, which we'll touch on during this section, then cover it in detail in the next.
+
+* Benchmarking ground rules
+
+Before you benchmark, you must have a stable environment to get repeatable results.
+
+- The machine must be idle—don't profile on shared hardware, don't browse the web while waiting for a long benchmark to run.
+- Watch out for power saving and thermal scaling.
+- Avoid virtual machines and shared cloud hosting; they are too noisy for consistent measurements.
+
+If you can afford it, buy dedicated performance test hardware. Rack it, disable all the power management and thermal scaling and never update the software on those machines.
+
+For everyone else, have a before and after sample and run them multiple times to get consistent results.
+
+* Using the testing package for benchmarking
+
+The `testing` package has built in support for writing benchmarks.
+
+  // Fib computes the n'th number in the Fibonacci series.
+  func Fib(n int) int {
+  	if n < 2 {
+  		return n
+  	}
+  	return Fib(n-1) + Fib(n-2)
+  }
+.caption fib.go
+
+  func BenchmarkFib(b *testing.B) {
+  	for n := 0; n < b.N; n++ {
+  		Fib(20) // run the Fib function b.N times
+  	}
+  }
+.caption fib_test.go
+
+DEMO: `go`test`-bench=.`./examples/fib`
+
+* How benchmarks work
+
+Each benchmark is run `b.N` times until it takes longer than 1 second.
+
+`b.N` starts at 1, if the benchmark completes in under 1 second `b.N` is increased and the benchmark run again.
+
+`b.N` increases in the approximate sequence; 1, 2, 3, 5, 10, 20, 30, 50, 100, ...
+
+ % go test -bench=. ./examples/fib
+ BenchmarkFib-4             30000             46408 ns/op
+ PASS
+ ok      _/Users/dfc/devel/high-performance-go-workshop/examples/fib     1.910s
+
+_Beware:_ below the μs mark you will start to see the relativistic effects of instruction reordering and code alignment. 
+
+- Run benchmarks longer to get more accuracy; `go`test`-benchtime=10s`
+- Run benchmarks multiple times; `go`test`-count=10`
+
+_Tip:_ If this is required, codify it in a `Makefile` so everyone is comparing apples to apples.
+
+# Setups costs usually amortized. Reset timer better than stop and start timer. 
+
+* Comparing benchmarks
+
+For repeatable results, you should run benchmarks multiple times.
+
+You can do this manually, or use the `-count=` flag.
+
+Determining the performance delta between two sets of benchmarks can be tedious and error prone.
+
+Tools like [[https://godoc.org/rsc.io/benchstat][rsc.io/benchstat]] are useful for comparing results.
+
+ % go test -c
+ % mv fib.test fib.golden 
+
+DEMO: Improve `Fib`
+
+ % go test -c
+ % ./fib.golden -test.bench=. -test.count=5 > old.txt
+ % ./fib.test -test.bench=. -test.count=5 > new.txt
+ % benchstat old.txt new.txt
+
+DEMO: `benchstat`{old,new}.txt`
+
+* Avoid benchmarking start up costs
+
+Sometimes your benchmark has a once per run setup cost. `b.ResetTimer()` will can be used to ignore the time accrued in setup.
+
+  func BenchmarkExpensive(b *testing.B) {
+  	boringAndExpensiveSetup()
+  	b.ResetTimer() // HL
+  	for n := 0; n < b.N; n++ {
+  		// function under test
+  	}
+  }
+
+If you have some expensive setup logic _per_loop_iteration, use `b.StopTimer()` and `b.StartTimer()` to pause the benchmark timer.
+
+  func BenchmarkComplicated(b *testing.B) {
+  	for n := 0; n < b.N; n++ {
+  		b.StopTimer() // HL
+  		complicatedSetup()
+  		b.StartTimer() // HL
+  		// function under test
+  	}
+  }
+
+* Benchmarking allocations
+
+Allocation count and size is strongly correlated with benchmark time.
+
+You can tell the `testing` framework to record the number of allocations made by code under test with
+ 
+  func BenchmarkRead(b *testing.B) {
+  	b.ReportAllocs() // HL
+  	for n := 0; n < b.N; n++ {
+  		// function under test
+  	}
+  }
+
+DEMO: `go`test`-run=^$`-bench=.`bufio`
+
+_Note:_ you can also use the `go`test`-benchmem` flag to do the same for _all_ benchmarks.
+
+DEMO: `go`test`-run=^$`-bench=.`-benchmem`bufio`
+
+* Watch out for compiler optimisations
+
+This example comes from [[https://github.com/golang/go/issues/14813#issue-140603392][issue 14813]]. How fast will this function benchmark?
+
+  const m1 = 0x5555555555555555
+  const m2 = 0x3333333333333333
+  const m4 = 0x0f0f0f0f0f0f0f0f
+  const h01 = 0x0101010101010101
+  
+  func popcnt(x uint64) uint64 {
+  	x -= (x >> 1) & m1
+  	x = (x & m2) + ((x >> 2) & m2)
+  	x = (x + (x >> 4)) & m4
+  	return (x * h01) >> 56
+  }
+  
+  func BenchmarkPopcnt(b *testing.B) {
+  	for i := 0; i < b.N; i++ {
+  		popcnt(uint64(i))
+  	}
+  }
+
+* What happened?
+
+ % go test -bench=. ./examples/popcnt
+ BenchmarkPopcnt-8       2000000000           0.29 ns/op
+ PASS
+ ok      github.com/davecheney/high-performance-go-workshop/examples/popcnt  0.625s
+
+`popcnt` is a leaf function, so the compiler can inline it.
+
+Because the function is inlined, the compiler can see it has no side effects, so the call is eliminated. This is what the compiler sees:
+
+  func BenchmarkPopcnt(b *testing.B) {
+  	for i := 0; i < b.N; i++ {
+  		// optimised away
+  	}
+  }
+
+The same optimisations that make real code fast, by removing unnecessary computation, are the same ones that remove benchmarks that have no observable side effects.
+
+This is only going to get more common as the Go compiler improves.
+
+* Benchmark mistakes
+
+The `for` loop is crucial to the operation of the benchmark.
+
+Here are two incorrect benchmarks, can you explain what is wrong with them?
+
+  func Fib(n int) int {
+  	a, b := 0, 1
+  	for i := 0; i < n; i++ {
+  		a, b = b, a+b
+  	}
+  	return a
+  }
+  
+  func BenchmarkFibWrong(b *testing.B) {
+  	Fib(b.N)
+  }
+  
+  func BenchmarkFibWrong2(b *testing.B) {
+  	for n := 0; n < b.N; n++ {
+  		Fib(n)
+  	}
+  }
+
+* Discussion
+
+Are there any questions?
+
+* Performance measurement and profiling
+
+* Performance measurement and profiling
+
+In the previous section we studied how to measure the performance of programs from the outside.
+
+In this section we'll use profiling tools built into Go to investigate the operation of the program from the inside.
+
+Don't trade performance for reliability
+
+* pprof
+
+The primary tool we're going to be talking about today is _pprof_.
+
+[[https://github.com/google/pprof][pprof]] descends from the [[https://github.com/gperftools/gperftools][Google Perf Tools]] suite of tools.
+
+`pprof` profiling is built into the Go runtime.
+
+It consists of two parts:
+
+- `runtime/pprof` package built into every Go program
+- `go`tool`pprof` for investigating profiles.
+
+pprof supports several types of profiling, we'll discuss three of these today: 
+
+- CPU profiling.
+- Memory profiling.
+- Block (or blocking) profiling.
+
+* CPU profiling
+
+CPU profiling is the most common type of profile, and the most obvious. 
+
+When CPU profiling is enabled the runtime will interrupt itself every 10ms and record the stack trace of the currently running goroutines.
+
+Once the profile is complete we can analyse it to determine the hottest code paths.
+
+The more times a function appears in the profile, the more time that code path is taking as a percentage of the total runtime.
+
+* Memory profiling
+
+Memory profiling records the stack trace when a _heap_ allocation is made.
+
+Stack allocations are assumed to be free and are _not_tracked_ in the memory profile.
+
+Memory profiling, like CPU profiling is sample based, by default memory profiling samples 1 in every 1000 allocations. This rate can be changed.
+
+Because of memory profiling is sample based and because it tracks _allocations_ not _use_, using memory profiling to determine your application's overall memory usage is difficult.
+
+Block profiling is quite unique. 
+
+A block profile is similar to a CPU profile, but it records the amount of time a goroutine spent waiting for a shared resource.
+
+This can be useful for determining _concurrency_ bottlenecks in your application.
+
+Block profiling can show you when a large number of goroutines _could_ make progress, but were _blocked_. Blocking includes:
+
+- Sending or receiving on a unbuffered channel.
+- Sending to a full channel, receiving from an empty one.
+- Trying to `Lock` a `sync.Mutex` that is locked by another goroutine.
+
+Block profiling is a very specialised tool, it should not be used until you believe you have eliminated all your CPU and memory usage bottlenecks.
+
+* One profile at at time
+
+Profiling is not free.
+
+Profiling has a moderate, but measurable impact on program performance—especially if you increase the memory profile sample rate.
+
+Most tools will not stop you from enabling multiple profiles at once.
+
+If you enable multiple profile's at the same time, they will observe their own interactions and throw off your results.
+
+*Do*not*enable*more*than*one*kind*of*profile*at*a*time.*
+
+* Using pprof
+
+[[https://www.youtube.com/watch?v=xxDZuPEgbBU&t=2533s][Profiling & Optimizing in Go / Brad Fitzpatrick]]
+Now that I've talked about what pprof can measure, I will talk about how to use pprof to analyse a profile.
+
+pprof should always be invoked with _two_ arguments.
+
+    go tool pprof /path/to/your/binary /path/to/your/profile
+
+The `binary` argument *must* be the binary that produced this profile.
+
+The `profile` argument *must* be the profile generated by this binary.
+
+*Warning*: Because pprof also supports an online mode where it can fetch profiles from a running application over http, the pprof tool can be invoked without the name of your binary ([[https://github.com/golang/go/issues/10863][issue 10863]]):
+
+    go tool pprof /tmp/c.pprof
+
+*Do*not*do*this*or*pprof*will*report*your*profile*is*empty.*
+
+* Using pprof (cont.)
+
+This is a sample CPU profile:
+
+	% go tool pprof $BINARY /tmp/c.p
+	Entering interactive mode (type "help" for commands)
+	(pprof) top
+	Showing top 15 nodes out of 63 (cum >= 4.85s)
+	      flat  flat%   sum%        cum   cum%
+	    21.89s  9.84%  9.84%    128.32s 57.71%  net.(*netFD).Read
+	    17.58s  7.91% 17.75%     40.28s 18.11%  runtime.exitsyscall
+	    15.79s  7.10% 24.85%     15.79s  7.10%  runtime.newdefer
+	    12.96s  5.83% 30.68%    151.41s 68.09%  test_frame/connection.(*ServerConn).readBytes
+	    11.27s  5.07% 35.75%     23.35s 10.50%  runtime.reentersyscall
+	    10.45s  4.70% 40.45%     82.77s 37.22%  syscall.Syscall
+	     9.38s  4.22% 44.67%      9.38s  4.22%  runtime.deferproc_m
+	     9.17s  4.12% 48.79%     12.73s  5.72%  exitsyscallfast
+	     8.03s  3.61% 52.40%     11.86s  5.33%  runtime.casgstatus
+	     7.66s  3.44% 55.85%      7.66s  3.44%  runtime.cas
+	     7.59s  3.41% 59.26%      7.59s  3.41%  runtime.onM
+	     6.42s  2.89% 62.15%    134.74s 60.60%  net.(*conn).Read
+	     6.31s  2.84% 64.98%      6.31s  2.84%  runtime.writebarrierptr
+	     6.26s  2.82% 67.80%     32.09s 14.43%  runtime.entersyscall
+
+Often this output is hard to understand.
+
+* Using pprof (cont.)
+
+A better way to understand your profile is to visualise it.
+
+	% go tool pprof application /tmp/c.p
+	Entering interactive mode (type "help" for commands)
+	(pprof) web
+
+Opens a web page with a graphical display of the profile.
+
+.link images/profile.svg 
+
+_Note_: visualisation requires graphviz.
+
+I find this method to be superior to the text mode, I strongly recommend you try it.
+
+pprof also supports these modes in a non interactive form with flags like `-svg`, `-pdf`, etc. See `go`tool`pprof`-help` for more details.
+
+.link http://blog.golang.org/profiling-go-programs Further reading: Profiling Go programs
+.link https://software.intel.com/en-us/blogs/2014/05/10/debugging-performance-issues-in-go-programs Further reading: Debugging performance issues in Go programs
+
+* Using pprof (cont.) 
+
+The output of a memory profile can be similarly visualised.
+
+    % go build -gcflags='-memprofile=/tmp/m.p'
+    % go tool pprof --alloc_objects -svg $(go tool -n compile) /tmp/m.p > alloc_objects.svg
+    % go tool pprof --inuse_objects -svg $(go tool -n compile) /tmp/m.p > inuse_objects.svg
+
+Memory profiles come in two varieties
+
+- Alloc objects reports the call site where each allocation was made
+
+.link images/alloc_objects.svg
+
+- Inuse objects reports the call site where an allocation was made _iff_ it was reachable at the end of the profile
+
+.link images/inuse_objects.svg
+
+* Using pprof (cont.) 
+
+Here is a visualisation of a block profile:
+
+    % go test -run=XXX -bench=ClientServer -blockprofile=/tmp/b.p net/http
+    % go tool pprof -svg http.test /tmp/b.p > block.svg
+
+.link images/block.svg 
+
+* Profiling benchmarks
+
+The `testing` package has built in support for generating CPU, memory, and block profiles.
+
+- `-cpuprofile=$FILE` writes a CPU profile to `$FILE`. 
+- `-memprofile=$FILE`, writes a memory profile to `$FILE`, `-memprofilerate=N` adjusts the profile rate to `1/N`.
+- `-blockprofile=$FILE`, writes a block profile to `$FILE`.
+
+Using any of these flags also preserves the binary.
+
+    % go test -run=XXX -bench=. -cpuprofile=c.p bytes
+    % go tool pprof bytes.test c.p
+
+_Note:_ use `-run=XXX` to disable tests, you only want to profile benchmarks. You can also use `-run=^$` to accomplish the same thing.
+
+* Profiling applications
+
+Profiling `testing` benchmarks is useful for _microbenchmarks_.
+
+We use microbenchmarks inside the standard library to make sure individual packages do not regress, but what if you want to profile a complete application?
+
+The Go runtime's profiling interface is in the `runtime/pprof` package.
+
+`runtime/pprof` is a very low level tool, and for historic reasons the interfaces to the different kinds of profile are not uniform.
+
+A few years ago I wrote a small package, [[https://github.com/pkg/profile][github.com/pkg/profile]], to make it easier to profile an application.
+
+     import "github.com/pkg/profile"
+
+     func main() {
+           defer profile.Start().Stop()
+           ...
+     }
+
+* Framepointers
+
+Go 1.7 has been released and along with a new compiler for amd64, the compiler now enables frame pointers by default.
+
+The frame pointer is a register that always points to the top of the current stack frame.
+
+Framepointers enable tools like `gdb(1)`, and `perf(1)` to understand the Go call stack.
+
+Further reading:
+
+.link talks.godoc.org/github.com/davecheney/presentations/seven.slide Seven ways to profile a Go program (slides)
+.link https://www.youtube.com/watch?v=2h_NFBFrciI Video (30 mins)
+.link https://www.bigmarker.com/remote-meetup-go/Seven-ways-to-profile-a-Go-program Recording (60 mins)
+
+* Always use the latest released version of Go
+
+Old versions of Go will never get better. They will never get bug fixes or optimisations.
+
+- Go 1.4 should not be used.
+- Go 1.5 and 1.6 had a slower compiler, but it produces faster code, and has a faster GC.
+- Go 1.7 delivered roughly a 30% improvement in compilation speed over 1.6, a 2x improvement in linking speed (better than any previous version of Go).
+- Go 1.8 will deliver a smaller improvement in compilation speed (at this point), but a significant improvement in code quality for non Intel architectures.
+
+Old version of Go receive no updates. Do not use them. Use the latest and you will get the best performance.
+
+.link http://dave.cheney.net/2016/04/02/go-1-7-toolchain-improvements Go 1.7 toolchain improvements
+.link http://dave.cheney.net/2016/09/18/go-1-8-performance-improvements-one-month-in Go 1.8 performance improvements
+
+* Conclusion
+
+* Always write the simplest code you can
+
+Start with the simplest possible code.
+
+Measure.
+
+If performance is good, _stop_. You don't need to optimise everything, only the hottest parts of your code.
+
+As your application grows, or your traffic pattern evolves, the performance hot spots will change.
+
+Don't leave complex code that is not performance critical, rewrite it with simpler operations if the bottleneck moves elsewhere.
+
+* Don't trade performance for reliability
+
+"I can make things very fast if they don't have to be correct."
+.caption Russ Cox
+
+"Readable means reliable"
+.caption Rob Pike
+
+Performance and reliability are equally important. 
+
+I see little value in having a very fast server that panics, deadlocks or OOMs on a regular basis.
+
+* In conclusion
+
+Profile your code to identify the bottlenecks, _do_not_guess_.
+
+Always write the simplest code you can, the compiler is optimised for _normal_ code.
+
+Shorter code is faster code; Go is not C++, do not expect the compiler to unravel complicated abstractions.
+
+Shorter code is _smaller_ code; which is important for the CPU's cache.
+
+Pay very close attention to allocations, avoid unnecessary allocation where possible.
+
+Don't trade performance for reliability.
+

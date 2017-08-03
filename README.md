@@ -1,6 +1,15 @@
 # go-training
 Golang training materials
 
+# Themes
+
+1. Intoduction
+1. OOP in Go
+1. Testing
+1. Network
+1. Concurrency
+1. Performance & optimization
+
 # Installation
 
 1. Clone this code into a directory
@@ -31,6 +40,7 @@ Articles:
 - [Resources for new go programmers by Dave Cheney](https://dave.cheney.net/resources-for-new-go-programmers)
 - [Golang github wiki](https://github.com/golang/go/wiki)
 - [golang underlying values](http://www.tapirgames.com/blog/golang-underlying-values)
+- [GitHub Go Wiki Article](https://github.com/golang/go/wiki/Articles)
 
 Practice:
 

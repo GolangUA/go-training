@@ -25,7 +25,6 @@ If you have suggestions or corrections to this presentation, please raise [[http
 - Basic Principles
 - Golang difference
 - SOLID
-- Examples
 
 * Previous Sessions
 
@@ -186,6 +185,75 @@ As the name suggests, a struct is more like a C struct than a C++ class. Structs
 Structs take subtypes by declaring anonymous members rather than an explicit inheritance syntax.
 
 Go simply recognizes anonymous members at the start of a struct declaration as base types for the struct, and allows the fields of the base types to be accessed directly.
+
+
+* OOP in Golang
+
+- Interface Contract
+- Interface Type
+- Interface Satisfaction
+- Interface Value
+- Type Assertation
+- Type Switches
+- Interface with Nil Pointer is Non-Nil
+
+* Interface with Nil Pointer is Non-Nil
+
+A nil interface value, which contains no value at all, is not the same as an interface value con- taining a pointer that happens to be nil. This subtle distinction creates a trap into which every Go programmer has stumbled.
+
+  const debug = true
+  func main() {
+         var buf *bytes.Buffer
+         if debug {
+             buf = new(bytes.Buffer) // enable collection of output
+         }
+         f(buf) // NOTE: subtly incorrect!
+  }
+  // If out is non-nil, output will be written to it.
+  func f(out io.Writer) {
+         // ...do something...
+         if out != nil {
+             out.Write([]byte("done!\n"))
+         }
+  }
+
+* How to fix that?
+
+* Use Interface for avoiding the assigment
+
+  var buf io.Writer
+  if debug {
+          buf = new(bytes.Buffer) // enable collection of output
+  }
+  f(buf) // OK
+
+* Type Conversion
+
+  func sum(f float32) int32 {
+      return int32(f) + 10
+  }
+
+* Type Assertation
+
+  func sum(i interface{}) int32 {
+      a, ok := i.(int32)
+      if !ok {
+          return errors.New("parameter should have int32 type")
+      }
+      return a + 10
+  }
+
+* Type Switching
+
+  func (var interface{}) {
+     switch v := var.(type) {
+     case string:
+        s, _ := strconv.Atoi(v)
+        fmt.Println("sum: %d", s + 10)
+     case int:
+        fmt.Println("%d", v+10)
+     }
+  }
 
 * Object-Oriented Programming in Golang
 

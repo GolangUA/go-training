@@ -1,5 +1,5 @@
 package greeting // HL
 
 func main() {
-	println("Hello SoftServe trainees!")
+	println("Hello GoBootCamp trainees!")
 }

@@ -1,7 +1,7 @@
 package main // HL
 
 func hello(name string) {
-	println("Привіт " + name)
+	println("Hello " + name)
 }
 
 func main() {

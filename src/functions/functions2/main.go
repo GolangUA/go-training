@@ -2,7 +2,7 @@ package main
 
 // START OMIT
 func hello() {
-	// println("Здоровеньки були") // HL
+	// println("Go BootCamp") // HL
 }
 
 func main() {

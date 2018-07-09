@@ -166,6 +166,17 @@ A *WaitGroup* waits for a collection of goroutines to finish. The main goroutine
   }
   wg.Wait()// Wait for all HTTP fetches to complete.
 
+* Deadlock
+
+[[https://youtu.be/3EW1hZ8DVyw][Richard Fliam - A Practical Guide to Preventing Deadlocks and Leaks in Go]]
+
+A deadlock happens when a group of goroutines are waiting for each other and none of them is able to proceed.
+
+  func main() {
+  	ch := make(chan int)
+  	ch <- 1
+  	fmt.Println(<-ch)
+  }
 
 * Semaphore
 
@@ -370,6 +381,9 @@ Also, advice to view:
 
 *Ivan*Danyliuk*, [[https://divan.github.io/posts/go_concurrency_visualize][Visualizing Concurrency in Go]], 24 January 2016
 Slides from GopherCon'16: [[http://divan.github.io/talks/2016/gophercon][gophercon]]
+*Rob*Pike*, [[http://www.youtube.com/watch?v=f6kdp27TYZs][Go Concurrency Patterns]]
+*Rob*Pike*, [[https://vimeo.com/49718712][Concurrency is not parallelism]]
+*Sameer*Ajmani*, [[https://youtu.be/QDDwwePbDtw][Advanced Go Concurrency Patterns]]
 
 
 * Simple Generator
@@ -697,6 +711,13 @@ In Go, all I/O is blocking. The Go ecosystem is built around the idea that you w
 - The stack of a goroutine is as big as it needs to be without being concerned about sizing thread stacks or thread pools.
 - The integrated network poller lets Go programmers avoid convoluted callback styles while still leveraging the most efficient IO completion logic available from the operating system.
 - The runtime makes sure that there will be just enough threads to service all your goroutines and keep your cores active.
+
+* Videos
+
+.link https://vimeo.com/115309491 Cancellation, Context, and Plumbing by Sameer Ajmani
+.link https://youtu.be/_YK0viplIl4 Sameer Ajmani - Simulating a real-world system in Go
+.link https://www.youtube.com/watch?v=cN_DpYBzKso&list=PL-wOZc0M0HQFs1vv792YeQCqBKzzaqq9r Go Concurrency Playlist
+.link https://youtu.be/HxaD_trXwRE Lexical Scanning in Go - Rob Pike
 
 * References
 

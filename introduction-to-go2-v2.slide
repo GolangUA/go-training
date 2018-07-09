@@ -23,9 +23,132 @@ If you have suggestions or corrections to this presentation, please raise [[http
 
 * Agenda
 
-- Advanced Syntax
+- Development environment and tooling
 - The standard library
 - Packages and applications
+
+* Development environment and tooling
+
+* Development environment and tooling
+
+This section focuses on the developer experience
+
+- Installing Go.
+- Setting up a `$GOPATH` workspace.
+- Introduction to the `go` command.
+- Writing unit tests with the go test command.
+
+* Installing Go
+
+The next few slides give examples of how to install Go on various systems.
+
+The official installation documentation is here:
+
+.link https://golang.org/doc/install
+
+The current version of Go is 1.10.3.
+
+- New minor releases, Go 1.11, Go 1.12, etc, ship twice a year. 
+- Historically 2–4 bug fix or security releases occur during each six month period.
+
+* Installing Go on OS X
+
+Installing Go on OS X (also known as `darwin`) can be accomplished with
+
+*Mac*OS*Installer*
+
+The Go project provides an `.pkg` installer, use:
+
+.link https://storage.googleapis.com/golang/go1.10.3.darwin-amd64.pkg
+
+*Homebrew*
+
+If you use Homebrew to manage third party software on your Mac, use:
+
+ brew install golang
+
+*MacPorts*
+
+If you use MacPorts to manage third party software on your Mac, use:
+
+ sudo port install go
+
+* Installing Go on Windows
+
+*MSI*Installer*
+
+The Go project provides a `.msi` installer for 32bit and 64bit Windows, use:
+
+.link https://storage.googleapis.com/golang/go1.10.3.windows-amd64.msi Windows 64bit MSI installer
+.link https://storage.googleapis.com/golang/go1.10.3.windows-386.msi Windows 32bit MSI installer
+
+*.zip*file*
+
+The Go project provides a `.zip` file of the Go compiler and standard library, use:
+
+.link https://storage.googleapis.com/golang/go1.10.3.windows-amd64.zip Windows 64bit zip file
+.link https://storage.googleapis.com/golang/go1.10.3.windows-386.zip Windows 32bit zip file
+
+Unzip the zip file and place it at `C:\Go`.
+
+* Installing Go on Linux
+
+Depending on your Linux distribution they may have an up to date version of Go, but this is rare.
+
+The most reliable way to install the latest version of Go is to untar
+
+.link https://storage.googleapis.com/golang/go1.10.3.linux-amd64.tar.gz
+
+to the directory
+
+ /usr/local
+
+and add 
+ 
+ /usr/local/go/bin
+
+to your `$PATH`.
+
+ echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bash_profile
+
+* Go tool
+
+Your Go installation comes with a tool we call the `go` tool, because that's its name.
+
+The `go` tool can 
+
+- compile your programs
+- run your tests
+- display documentation for a package
+- fetch packages from the internet.
+
+* $GOPATH
+
+The `go` tool works inside a workspace where _all_ your Go source code is stored.
+
+All the source code for this workshop is included with this repository.
+
+You can set `$GOPATH` to be the base directory where you checked out this repository. eg.
+
+ % export GOPATH=$HOME/introduction-to-go
+
+Using a workspace allows you to import code from other packages with a fixed name. eg.
+
+ import "github.com/pkg/profile"
+
+Will import the code for the `profile` package stored in
+
+ $GOPATH/src/github.com/pkg/profile
+
+* Golang workspace
+
+A workspace is a directory hierarchy with three directories at its root:
+
+- src contains Go source files,
+- pkg contains package objects, and
+- bin contains executable commands.
+
+[[https://golang.org/doc/code.html#Workspaces][Workspace]]
 
 * Advanced Syntax
 
@@ -46,406 +169,6 @@ The Go playground can format your code according to the canonical Go style.
 
 - Follow [[https://play.golang.org/p/0Hz57BQdTA][this link]] and press the *Format* button to see this in action.
 
-* Zero value
-
-In previous examples we've written code like this
-
- var name = "go"
- var counter = 1
-
-Which both _declares_ and _initalises_ the variables `counter` and `name` respectively. What happens if we have code like this?
-
-.code src/zerovalue/zerovalue1/main.go
-
-What will this print?
-
-- Follow [[https://play.golang.org/p/jioUB0t_LW][this link]] and press the *Run* button to see this in action.
-
-* Zero value (cont.)
-
-In Go, there is no unitialised memory. The Go runtime will always ensure that the memory allocated for each variable is initalised before use.
-
-If we write something like 
-
- var name string
- var counter int
-
-Then the memory assigned to the variables `name` and `counter` will be zeroed, as we have not provided an _initaliser_.
-
-- The value of `name` will be `""` because that is the value of a string with zero length.
-- The value of `counter` will be zero, because that is the value of an `int` if we wrote `0` to its memory location.
-
-* Zero value (cont.)
-
-Every type in Go has an associated _zero_value_. The value of that variable if we wrote zeros to its memory.
-
-- The zero value for integer types: `int`, `int8`, `uint`, `uint64`, etc, is `0`.
-- The zero value for floating point types: `float32`, `float64`, `complex128`, etc, is `0.0`.
-- The zero value for arrays is the zero value for each element, ie. `[3]int` is `0`, `0`, `0`.
-- The zero value for slices is `nil`.
-- The zero value for structs is the zero value for each field.
-
-* Equality
-
-As Go is a strongly typed language, for two variables to be equal, both their _type_and_their_value_ must be equal.
-
-Trying to compare two variables of _different_ types is detected at runtime.
-
-.code src/equality/equality1/main.go
-
-- Follow [[https://play.golang.org/p/LwiJm2xuXK][this link]] and press the *Run* button.
-- Fix the program by declaring `x` and `y` to be the _same_ type.
-
-* Type conversions
-
-Sometimes you have variables of different integer types, you can _convert_ from one type to another using a conversion _expression_.
-
-The expression `T(v)` converts the value `v` to the type `T`.
-
-.code -edit src/types/types2/main.go
-
-In this example the assignment of `y`=`x` fails because `x` and `y` are different integer types.
-
-- Follow [[https://play.golang.org/p/wvG41C0lH4][this link]] and press the *Run* button.
-- Fix the program by _converting_ `x` to an `int` with `int(x)`.
-
-* Type conversions (cont.)
-
-If you have variables of different _widths_, you can _convert_ from one type to another.
-
-.code -edit src/types/types3/main.go
-
-- Follow [[https://play.golang.org/p/l4Q48pWAla][this link]] and press the *Run* button.
-- Fix the program by _converting_ `x` to an `int64` with `int64(x)`.
-
-* Type conversions (cont.)
-
-We can do the opposite and convert a wider type to a narrower type.
-
-.code -edit src/types/types4/main.go
-
-- Follow [[https://play.golang.org/p/NbNwRjbmRu][this link]] and press the *Run* button. Does it print the answer you expected?
-- Fix the program by _declaring_ `y` as an `int32`.
-
-* Integer overflow
-
-Whenever you declare a variable in Go, you have to choose how many bits of memory it will consume.
-
-When you convert a variable with a _smaller_ number of bits to a variable with a larger number of bits, this is fine, because they all fit.
-
-When you convert a variable with a _larger_ number of bits to a variable with a smaller number of bits there is a risk of truncation, because there are less bits available to represent your number.
-
-- Follow [[https://play.golang.org/p/NbNwRjbmRu][this link]] and press the *Run* button. Does it print the answer you expected?
-- Fix the program by reducing the value of `x`. Hint: the value needs to be less than 33,000.
-
-* Short declaration syntax
-
-As you've probably noticed, Go has several ways to declare variables. All three of these are the same
-
- var x = 0
- var x int = 0
- var x int
-
-If you've come from a language like Ruby or Python, you're probably wondering if this very common operation can be made more concise. Indeed it can.
-
- x := 0
-
-This is what we call a _short_declaration_, which is the same as 
- 
- var x int = 0
-
-Short declaration is very common in Go programs, you'll see it everywhere, so let's do some exercises to familarise you with its use.
-
-* Short declaration syntax (cont.)
-
-A common use of the short declaration syntax is in `for` loops. Consider this program
-
- var i int
- for i = 1; i < 11; i++ {
-         fmt.Println(i)
- }
-
-This can be also written as
-
- for i := 1; i < 11; i++ {
-         fmt.Println(i)
- }
-
-[[https://play.golang.org/p/3Vl75w72JO][This program]] contains two `var` declarations and two `for` loops.
-
-- Follow [[https://play.golang.org/p/3Vl75w72JO][this link]] and press the *Run* button.
-- Rewrite the program using the short declaration syntax; there should be no `var` declarations, only `:=`.
-
-* Multiple assignment
-
-Go allows you to perform multiple assignments and declarations in one statement.
-
-For example, if we wanted to declare, `x`, `y`, and `z`, with the values `1`, `2`, and `3` respectively. We could write
-
- var x = 1
- var y = 2
- var z = 3
-
-We can write the same thing like this
-
- var x, y, z = 1, 2, 3
-
-- Follow [[https://play.golang.org/p/d2hDJQAfkt][this link]] for some examples of multiple declaration.
-
-* Multiple return values
-
-Multiple assignment is important to understand because you can return multiple values from a function.
-
- func f(i int)
-
-This is a function declaration for `f` which takes one argument, an `int`.
-
- func g(i int, j int, k string) int
-
-This is a function declaration for `g`, which takes three arguments, two `int` s and a `string`, and returns an `int`.
-
- func h(i, j int) (int, int, string)
-
-This is a function declaration for `h`, which takes two arguments, two `ints`, and returns three values, two `int` s and a `string`.
-
-* Multiple return values (cont.)
-
-Your program must return the number of values specified in the function signature.
-
-.code -edit src/functions/functions4/main.go
-
-* Assigning multiple return values
-
-When you call a function that returns multiple values, you must assign _all_ of them or _none_ of them.
-
- func f() (int, bool, string)
-
- func main() {
-         a, b, c := f()
-         fmt.Println(a, b, c)
- }
-
-`f` returns three values, so we assign them to `a`, `b`, and `c` using the short declaration syntax.
-
-If we wanted to use only the first and third values we can ignore the second by assigning it to the underscore variable, `_`.
-
- func main() {
-         a, _, c := f()
-         fmt.Println(a, c)
- }
-
-* Array
-
-An array is defined by: [n]<type>, where _n_ is the length of the array and _<type>_ is the stuff you want to store.
-
-  var arr [10]int
-  arr[0] = 42
-  arr[1] = 13
-  fmt.Printf("The first element is %d\n", arr[0])
-
-
-* Pointers
-
-  var p *int
-  fmt.Printf("%v", p)
-  
-  var i int
-  p = &i
-  
-  fmt.Printf("%v", p)
-
-* Allocation
-
-
-- new(T) returns *T pointing to a zeroed T
-- make(T) returns an initialized T
-
-  var p *[]int = new([]int)
-  var v  []int = make([]int, 100)
-  
-  var p *[]int = new([]int)
-  *p = make([]int, 100, 100)
-  
-  v := make([]int, 100)
-
-* Slices
-
-The next kind of type to discuss is the _Slice_. 
-
-A slice is an ordered collection of values of a _single_ type.
-
-First we create an _array_ of _m_ elements of the type `int:`var`array[m]int`.
-
-`slice`:=`array[:n]`//`n`<`m`
-
-
-- len(slice) == n
-- cap(slice) == m
-- len(array) == cap(array) == m
-
-* Make & slice
-
-We can create a slice with space to hold items using the built-in `make` function.
-
-Because declaring a slice variable and initalising it with `make` is a common operation, it is common to see the _short_variable_declaration_ used to combine this operations.
-
-.code -edit src/slices/slices3/main.go
-
-This example declares `i` _and_ initalises it to be a slice of `int` with a length of 20.
-
-- Follow [[https://play.golang.org/p/b92SJ0Gx9s][this link]] and press the *Run* button.
-- Did `fmt.Println(len(i))` print the result you expected?
-
-* Slice initialisation
-
-Doing this manually is verbose and boring; how would you do this for the first 50 primes?
-
-Go supports a method of assignment where we both _declare_ and _initalise_ the slice at once.
-
-.code -edit src/slices/slices7/main.go
-
-* Index expressions
-
-To access, or assign, the contents of a slice element at index `i`, use the form `s[i]`.
-
-Slices are zero indexed, so `s[0]` is the 1st element, `s[1]` is the second element, and so on.
-
-When the _index_expression_ appears on the _left_hand_side_ of the equals operator, `=`
-
- s[7] = 20
-
-We are assigning the number 20 to the 8'th element of the slice `s`.
-
-When the _index_expression_ appears on the _right_hand_side_ of the equals operator, `=`
-
- x := s[7]
-
-We are assigning the value at the 8th element of `s` to the variable `x`.
-
-* Slice zero value
-
-We saw earlier that the _zero_value_ of the slice
-
- var s []int
-
-was and empty slice, a slice with length of zero.
-
-What is the value of each of the elements of a newly created, with make, slice?
-
-.code -edit src/slices/slices5/main.go
-
-- Follow [[https://play.golang.org/p/kGh_C1l6KW][this link]] and press the *Run* button.
-- Did the program print the result you expected?
-
-* Subslices
-
-What if we have a large slice, and want to refer to only a part of it. 
-
-We call this slicing a slice, or _subslicing_.
-
-Subslicing looks similar to the _indexing_ operation we saw a few slide ago, except it refers to a range of slice indexes.
-
-  a := [...]int{1, 2, 3, 4, 5}
-  s1 := a[2:4]
-  s2 := a[1:5]
-  s3 := a[:]
-  s4 := a[:4]
-  s5 := s2[:]
-  s6 := a[2:4:5]
-
-* Subslices (cont.)
-
-An important thing to remember when slicing a slice, is that both slices refer to the _same_ underying data.
-
-.code -edit src/slices/slices10/main.go
-
-* append
-
-So far we've been using slices with a known length. You can extend the contents of a slice with the built-in `append` function.
-
-  s0 := []int{0, 0}
-  s1 := append(s0, 2)
-  s2 := append(s1, 3, 5, 7)
-  s3 := append(s2, s0...)
-
-
-`append` increases the length of the slice to accommodate the new items, then returns a new slice value.
-
-You can `append` multiple values in one statement, providing they are all the same type.
-
-.link https://blog.golang.org/slices Further reading: Arrays, slices (and strings): The mechanics of 'append' (blog.golang.org)
-
-* Copy
-
-  var a = [...]int{0, 1, 2, 3, 4, 5, 6, 7}
-  var s = make([]int, 6)
-  n1 := copy(s, a[0:])
-  n2 := copy(s, s[2:]) 
-
-To create two independent slice values, you would use the `copy` function. 
-.link https://divan.github.io/posts/avoid_gotchas Ivan Danyluk: Blog Post about Golang gotchas
-
-* Bounds checking
-
-Each slice has a length which is decided when it is made.
-
-You can increase the length of the slice with the `append` function, and create a smaller slice from a larger one using the slice operator.
-
-What happens if you accidentally exceed the bounds of the slice?
-
-.code -edit src/slices/slices11/main.go
-
-- Follow [[https://play.golang.org/p/mIWm0a1amp][this link]] and press the *Run* button.
-- Comment out `fmt.Println(primes[-1])` and see what happens.
-
-* Maps
-
-Go has a built in Hash Map type, called a `map`.
-
-Maps map values of key type K to values of type V
-
- var m map[string]int
-
-Just like making a slice, making a map is accomplished with the `make` built-in.
-
-.code -edit src/maps/maps1/main.go
-
-* Compact literal initalisation
-
-Just like slices, maps support compact literal initalisation, which declares and initalises the map.
-
-.code -edit src/maps/maps3/main.go
-
-* Retrieving a values from a map
-
-Just like a slice, you can retrieve the value stored in a map with the syntax `m[key]`.
-
-If it is present the value will be returned, if not the _zero_value_ will be returned.
-
-.code -edit src/maps/maps4/main.go
-
-* Checking if a map value exists
-
-In the previous slide we saw that `moons["Neptune"]` returned `0`.
-
-How can we tell if Neptune actually has no moons, or if `0` was returned because there is no entry for Neptune?
-
-Map look ups support a second syntax.
-
-.code -edit src/maps/maps5/main.go
-
-* Deleting a value from a map
-
-To delete a value from a map, you use the built in `delete` function.
-
-.code -edit src/maps/maps6/main.go
-
-* Iterating over a map
-
-If we wanted to print out all the values in a map we can use a form of the `for` syntax which is known as `range`.
-
-.code -edit src/range/range1/main.go
-
 `range` loops over each entry in the map, assigning the map key to `name`, and the map value to `pop`.
 
 * Range over slices
@@ -456,137 +179,84 @@ We say previously that `for`range` works with maps, it also works with slices.
 
 - Follow [[https://play.golang.org/p/AmQW-OrPC1][this link]] and complete the exercise.
 - If you cannot figure it out, don't worry, there is an answer on the next slide.
-
-* Switch
-
-If you completed the previous exercise you may have written something like this
-
-.code -edit src/range/range2a/main.go /START OMIT/,/END OMIT/
-
-Heavily nested `if`else`if` blocks are discouraged in Go.
-
-Instead we can use the other condition statement, `switch`.
-
-* Switch (cont.)
-
-`switch` can be used 
-
 .code -edit src/switch/switch1/main.go /START OMIT/,/END OMIT/
 
-* Structs
+* Packages
 
-So far we've discussed two kinds of types; _primitive_ types and _slice_ types.
+A package is the unit in which software is shared and reused in Go. All Go code is arranged into packages.
 
-Go supports what we call _compound_ types, that is, types that are _composed_ of other types. 
+Each source file in a package must begin with the same `package` declaration.
 
-These are called _struct_ (for _structure_) types. We declare a struct like this:
+A package's name must be a valid identifier, just like `const`, `var`, and `func`.
 
- type Point struct {
-          X int
-          Y int
- }
+.code -edit src/packages/packages1/main.go
 
-`Point` is a position in two dimensional space, it has two fields, `X` and `Y`.
+This is the same example as the previous slide, revealing the `package` declaration.
 
-- Follow [[https://play.golang.org/p/fAnPV1MojK][this link]] to complete the example
+`package`main` is the name of the package which contains the entry point to your program, `func`main`.
 
-* More on structure fields
+* main packages
 
-  struct {
-      x, y int
-      A *[]int
-      F func()
-  }
-  
-  struct {
-      T1        // Field name is T1.
-      *T2       // Field name is T2.
-      P.T3      // Field name is T3.
-      x, y int  // Field names are x and y.
-  }
+This program has the wrong `package` declaration.
 
+.code -edit src/packages/packages2/main.go
 
-* Methods
+- Change the `package` declaration to make the program compile.
 
-To this point we've talked about functions, which belong to a package
+* Import
 
- // Max returns the larger of a or b.
- func Max(a, b int) int
+The final declaration we'll cover in this section is the _import_ declaration.
 
-In Go, you can attach a function to a type that you declare, this is called a _method_.
+The `import` declaration allows you to use code from other _packages_ into your package.
+When you `import` a package, the _public_ types, functions, variables, types, and constants, are available with a prefix of the package's name.
 
- type Point struct { X, Y int }
+ time.Now	// denotes the Now function in package time
 
- func (p Point) String() string {
-          return fmt.Sprintf("point: x=%d, y=%d", p.X, p.Y)
- }
+Note that
 
-Any type that implements a `String()`string` method will be used by the `fmt` package when it prints the value.
+ import "fmt"
+ import "time"
 
-- Complete the exercise in `$GOPATH/src/exercises/methods` by making all the tests pass.
+and
 
-* Pointers
+ import (
+         "fmt"
+         "time"
+ )
 
-Whenever you pass a value to a function or method, the value is _copied_.
+both import the `fmt` and `time` packages. The syntax is different, but they are equivalent.
 
-In Go, the method's receiver is also a value, so it's copied when you call a method.
+* Import (cont.)
 
-.code -edit src/pointers/pointers1.go /START OMIT/,/END OMIT/
+The `import` declaration must appear _after_ the `package` declaration, but before any `type`, `const`, `var`, or `func` declarations.
 
-- Complete the exercise in `$GOPATH/src/exercises/pointers` by making the test pass.
+.code -edit src/imports/imports1/main.go 
 
-* Interfaces
+This program does not compile as the `import` declaration is in the wrong place.
 
-Go is an object oriented language; we have methods on types, but Go does not support inheritance or sub-classes.
+- Move the `var`now`=`time.Now()` declaration _below_ the `import` declaration.
 
-Go supports polymorphism, _has_a_ (not _is_a_) with _interfaces_.
+* Import (cont.)
 
-An interface declaration looks like this:
+Packages contain both _public_ and _private_ symbols. We also call these _exported_ and _not_exported_, respectively.
 
- type Reader interface { 
-          Read(buf []byte) (int, error) 
- }
+.code -edit src/imports/imports2/main.go 
 
-This is the [[https://golang.org/pkg/io/#Reader][`io.Reader`]] interface declaration from the [[https://golang.org/pkg/io/][`io`]] package.
+This program does not compile as it refers to two _private_ symbols.
 
-Go does not have an _implements_ keyword, any type with the correct set of methods _is_ an implementation of the interface.
+- Fix the program by using the correct case for `Println` and `Time`.
 
-* Interface example
+_note_: If you are running this slide from [[https://go-talks.golang.org/][gotalks.golang.org]], the time may be reported as `2009-11-10`23:00:00`+0000`UTC`. This is a technical limitation.
 
-  type S struct { i int }
-  func (p *S) Get() int  { return p.i }
-  func (p *S) Put(v int) { p.i = v }
-  
-  type I interface {
-      Get() int
-      Put(int)
-  }
-  
-  func f(p I) {
-      fmt.Println(p.Get())
-      p.Put(1)
-  }
+* fmt package
 
-* Which is what?
+Do you remember this program?
 
-  type R struct { i int }
-  func (p *R) Get() int  { return p.i }
-  func (p *R) Put(v int) { p.i = v }
-  
-  func f(p I) {
-      switch p.(type) {
-          case *S:
-          case *R:
-          default:
-      }
-  }
+.code -edit src/imports/imports3/main.go
 
-* Empty interface
+Here it is again, showing the `func`, `package` and `import` declarations making it a complete Go program.
 
-  func g(something interface{}) int {
-      return something.(I).Get()
-  }
-
+This program also uses the `Println` function from the `fmt` package, which is more capable than the built in `println` function.
 
 * Documenting packages with comments
 

@@ -1,5 +1,5 @@
 Introduction to Go (Part 2) v2
-09 Jul 2018
+10 Jul 2018
 
 Ivan Kutuzov
 ikut@softserveinc.com
@@ -150,12 +150,6 @@ A workspace is a directory hierarchy with three directories at its root:
 
 [[https://golang.org/doc/code.html#Workspaces][Workspace]]
 
-* Advanced Syntax
-
-This section builds on the previous by exploring each of the things we learnt in a little more detail.
-
-In this section we'll use the Go Playground, a simple online code editor to perform our exercises.
-
 * Coding style
 
 All Go code is formatted according to a single style guide which is enforced with a tool called `gofmt`
@@ -167,19 +161,7 @@ Having one single style that all Go code is formatted in improves readability an
 
 The Go playground can format your code according to the canonical Go style.
 
-- Follow [[https://play.golang.org/p/0Hz57BQdTA][this link]] and press the *Format* button to see this in action.
-
-`range` loops over each entry in the map, assigning the map key to `name`, and the map value to `pop`.
-
-* Range over slices
-
-We say previously that `for`range` works with maps, it also works with slices.
-
-.code -edit src/range/range2/main.go
-
-- Follow [[https://play.golang.org/p/AmQW-OrPC1][this link]] and complete the exercise.
-- If you cannot figure it out, don't worry, there is an answer on the next slide.
-.code -edit src/switch/switch1/main.go /START OMIT/,/END OMIT/
+* Packages
 
 * Packages
 
@@ -190,8 +172,6 @@ Each source file in a package must begin with the same `package` declaration.
 A package's name must be a valid identifier, just like `const`, `var`, and `func`.
 
 .code -edit src/packages/packages1/main.go
-
-This is the same example as the previous slide, revealing the `package` declaration.
 
 `package`main` is the name of the package which contains the entry point to your program, `func`main`.
 
@@ -210,7 +190,7 @@ The final declaration we'll cover in this section is the _import_ declaration.
 The `import` declaration allows you to use code from other _packages_ into your package.
 When you `import` a package, the _public_ types, functions, variables, types, and constants, are available with a prefix of the package's name.
 
- time.Now	// denotes the Now function in package time
+  time.Now // denotes the Now function in package time
 
 Note that
 
@@ -248,6 +228,15 @@ This program does not compile as it refers to two _private_ symbols.
 
 _note_: If you are running this slide from [[https://go-talks.golang.org/][gotalks.golang.org]], the time may be reported as `2009-11-10`23:00:00`+0000`UTC`. This is a technical limitation.
 
+* Circular dependencies
+
+It’s the belief of Golang developers that circular dependencies are design flaws. 
+If you have package *alice* that depends on package *bob* for some things, and then you have package *bob* that depends on package *alice* for some things,… it shouldn’t be necessary to join packages *alice* and *bob* into one package to resolve the circular dependency.
+
+  Write programs that do one thing and do it well. (Solid)
+
+* The standard library
+
 * fmt package
 
 Do you remember this program?
@@ -257,6 +246,242 @@ Do you remember this program?
 Here it is again, showing the `func`, `package` and `import` declarations making it a complete Go program.
 
 This program also uses the `Println` function from the `fmt` package, which is more capable than the built in `println` function.
+
+* fmt
+
+The format verbs are derived from C's but are simpler. Some verbs (%-sequences) that can be used:
+
+- %v The value in a default format. when printing structs, the plus flag (%+v) adds field names.
+- %#v a Go-syntax representation of the value.
+- %T a Go-syntax representation of the type of the value. 
+
+.link https://medium.com/go-walkthrough/go-walkthrough-fmt-55a14bbbfc53 Ben Johnson, Go Walkthrough: fmt
+
+* io
+
+This package provides basic interfaces to I/O primitives. Whether you have lists of bytes, streams of bytes, or individual bytes, Go makes it easy to process. 
+
+.link https://medium.com/go-walkthrough/go-walkthrough-io-package-8ac5e95a9fbd Ben Johnson, Go Walkthrough: io package
+
+* bufio
+
+This package implements buffered I/O.
+
+- type Scanner
+
+- func ScanBytes(data []byte, atEOF bool) (advance int, token []byte, err error)
+- func ScanLines(data []byte, atEOF bool) (advance int, token []byte, err error)
+- func ScanRunes(data []byte, atEOF bool) (advance int, token []byte, err error)
+- func ScanWords(data []byte, atEOF bool) (advance int, token []byte, err error)
+
+.link https://godoc.org/bufio GoDoc
+
+* sort
+
+The sort package provides primitives for sorting arrays and user-defined collections.
+
+  type Interface interface {
+      // Len is the number of elements in the collection.
+      Len() int
+      // Less reports whether the element with
+      // index i should sort before the element with index j.
+      Less(i, j int) bool
+      // Swap swaps the elements with indexes i and j.
+      Swap(i, j int)
+  }
+
+ but now just use proper func: Float64s, Ints, Strings
+
+.link https://godoc.org/sort GoDoc
+
+* strconv
+
+The strconv package implements conversions to and from string representations of basic data types.
+
+  i, err := strconv.Atoi("-42")
+  s := strconv.Itoa(-42)
+  b, err := strconv.ParseBool("true")
+  f, err := strconv.ParseFloat("3.1415", 64)
+  i, err := strconv.ParseInt("-42", 10, 64)
+  u, err := strconv.ParseUint("42", 10, 64)
+  s := strconv.FormatBool(true)
+  s := strconv.FormatFloat(3.1415, 'E', -1, 64)
+  s := strconv.FormatInt(-42, 16)
+  s := strconv.FormatUint(42, 16)
+
+.link https://medium.com/go-walkthrough/go-walkthrough-strconv-7a24632a9e73 Ben Johnson, Go Walkthrough: strconv
+
+* bytes / strings
+
+Byte slices represent a mutable, resizable, contiguous list of bytes.
+Strings, on the other hand, represent an immutable, fixed-size, contiguous list of bytes.
+
+At first glance the bytes and strings packages appear large but they are really just a collection of simple helper functions.
+
+- Comparison functions
+- Inspection functions
+- Prefix/suffix functions
+- Replacement functions
+- Splitting & joining functions
+
+.link https://medium.com/go-walkthrough/go-walkthrough-bytes-strings-packages-499be9f4b5bd Ben Johnson, Go Walkthrough: bytes + strings packages
+
+* os
+
+The os package provides a platform-independent interface to operating system functionality. The design is Unix-like.
+
+  file, err := os.Open("file.go") // For read access.
+  if err != nil {
+  	log.Fatal(err)
+  }
+
+Exported global variables:
+
+  var (
+      Stdin  = NewFile(uintptr(syscall.Stdin), "/dev/stdin")
+      Stdout = NewFile(uintptr(syscall.Stdout), "/dev/stdout")
+      Stderr = NewFile(uintptr(syscall.Stderr), "/dev/stderr")
+  )
+
+.link https://godoc.org/os GoDoc
+
+* sync
+
+The package sync provides basic synchronization primitives such as mutual exclusion locks.
+
+- type Mutex
+- type Pool
+- type WaitGroup
+
+.link https://godoc.org/sync GoDoc
+
+* flag
+
+The flag package implements command-line flag parsing.
+
+  import "flag"
+
+  var ip = flag.Int("flagname", 1234, "help message for flagname")
+  flag.Var(&flagVal, "name", "help message for flagname")
+  
+  flag.Parse()
+
+.link https://godoc.org/flag GoDoc
+
+* encoding/json
+
+The encoding/json package implements encoding and decoding of JSON objects as defined in RFC 4627
+
+  type Encoder struct {}
+  
+  func NewEncoder(w io.Writer) *Encoder
+  
+  func (enc *Encoder) Encode(v interface{}) error
+  
+  func Marshal(v interface{}) ([]byte, error)
+  
+  type Decoder struct {}
+  
+  func NewDecoder(r io.Reader) *Decoder
+  
+  func (dec *Decoder) Decode(v interface{}) error
+  
+  func Unmarshal(data []byte, v interface{}) error
+
+.link https://medium.com/go-walkthrough/go-walkthrough-encoding-json-package-9681d1d37a8f Ben Johnson, Go Walkthrough: encoding/json package 
+
+* JSON encoding
+
+The `encoding/json` package requires the fields of a struct to be public (start with an upper case letter), this means the keys in your JSON document will be upper case.
+
+We can fix this and control the output of the JSON with a _tag_.
+
+The format of the JSON tag is documented on the [[https://golang.org/pkg/encoding/json/#Marshal][`json.Encode`]] method.
+
+.code -edit src/jsonenc/jsonenc2.go /START OMIT/,/END OMIT/
+
+* html/template
+
+Data-driven templates for generating textual output such as HTML.
+
+  func HTMLEscape(w io.Writer, b []byte)
+  func HTMLEscapeString(s string) string
+  func HTMLEscaper(args ...interface{}) string
+  func IsTrue(val interface{}) (truth, ok bool)
+  func JSEscape(w io.Writer, b []byte)
+  func JSEscapeString(s string) string
+  func JSEscaper(args ...interface{}) string
+  func URLQueryEscaper(args ...interface{}) string
+
+.link https://godoc.org/html/template GoDoc
+
+* net/http request
+
+Get, Head, Post, and PostForm make HTTP (or HTTPS) requests: 
+
+  resp, err := http.Get("http://example.com/")
+  ...
+  resp, err := http.Post("http://example.com/upload", "image/jpeg", &buf)
+  ...
+  resp, err := http.PostForm("http://example.com/form",
+	url.Values{"key": {"Value"}, "id": {"123"}})
+
+.link https://godoc.org/net/http GoDoc
+
+* net/http client
+
+  client := &http.Client{
+  	CheckRedirect: redirectPolicyFunc,
+  }
+  
+  resp, err := client.Get("http://example.com")
+  // ...
+  
+  req, err := http.NewRequest("GET", "http://example.com", nil)
+  // ...
+  req.Header.Add("If-None-Match", `W/"wyzzy"`)
+  resp, err := client.Do(req)
+  // ...
+
+* net/http transport
+
+  tr := &http.Transport{
+  	MaxIdleConns:       10,
+  	IdleConnTimeout:    30 * time.Second,
+  	DisableCompression: true,
+  }
+  client := &http.Client{Transport: tr}
+  resp, err := client.Get("https://example.com")
+
+* net/http server
+
+  myHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+  	fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+  })
+  
+  s := &http.Server{
+  	Addr:           ":8080",
+  	Handler:        myHandler,
+  	ReadTimeout:    10 * time.Second,
+  	WriteTimeout:   10 * time.Second,
+  	MaxHeaderBytes: 1 << 20,
+  }
+  log.Fatal(s.ListenAndServe())
+
+* net/http handler
+
+  type Handler interface {
+      ServeHTTP(ResponseWriter, *Request)
+  }
+
+  type HandlerFunc func(ResponseWriter, *Request)
+  func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request)
+
+  func Handle(pattern string, handler Handler)
+
+* Let's make a break
+
+* Documentation
 
 * Documenting packages with comments
 
@@ -276,7 +501,9 @@ Here are some examples
 _Notes_
 
 - Comments directly precede the thing they apply to, don't put an extra newline in between the comment and the symbol
-- You should comment both Public and private symbols, but godoc will only show you the documents
+- You should comment both Public and private symbols, but godoc will only show you the Public as documents
+
+* Testing
 
 * Testing
 
@@ -304,6 +531,13 @@ Each test is a function in the form
 - `NameOfTest` is the name of your test, it _must_ start with an upper case letter.
 - Test functions take a `testing.T` value, which provides helpers like `t.Error` and `t.Fail`.
 
+* Test API
+
+- `func`(t`*T)`Fail()`, Fail marks the test function as having failed but continues execution.
+- `func`(t`*T)`FailNow()`, FailNow marks the test function as having failed and stops its execution. Any remaining tests in this file are skipped, and execution continues with the next test.
+- `func`(t`*T)`Log(args`...interface{})`, Log formats its arguments using default formatting, analogous to Print(), and records the text in the error log.
+- `func`(t`*T)`Fatal(args`...interface{})`, Fatal is equivalent to Log() followed by FailNow().
+
 * Test coverage
 
 `go`test` can report coverage
@@ -315,33 +549,217 @@ This produces a coverage file, `cover.out`
 - `go`tool`cover`-func=cover.out` will print the coverage report
 - `go`tool`cover`-html=cover.out` will open the report in a browser
 
-_Protip_: I use these little shell functions to make this easier
+* package is
 
- cover () {
-   t=$(mktemp -t cover)
-   go test $COVERFLAGS -coverprofile=$t $@ && go tool cover -func=$t && unlink $t
- }
+simple, smole
 
- cover-web() {
-   t=$(mktemp -t cover)
-   go test $COVERFLAGS -coverprofile=$t $@ && go tool cover -html=$t && unlink $t
- }
+  func Test(t *testing.T) {
+  	is := is.New(t)
+  	a, b := 1, 2
+  	is.Equal(a, b) // expect to be the same
+  }
 
-* JSON encoding
+Will output:
 
-The `encoding/json` package requires the fields of a struct to be public (start with an upper case letter), this means the keys in your JSON document will be upper case.
+  your_test.go:123: 1 != 2 // expect to be the same
 
-We can fix this and control the output of the JSON with a _tag_.
+.link https://youtu.be/MMnaq2jwAiE GothamGo 2016 - Quality Tests in Go by Mat Ryer
+.link https://youtu.be/EOpj9aZ8Kfo dotGo 2017 - Mat Ryer - The Art of Testing
 
-The format of the JSON tag is documented on the [[https://golang.org/pkg/encoding/json/#Marshal][`json.Encode`]] method.
+* Some best practices
 
-.code -edit src/jsonenc/jsonenc2.go /START OMIT/,/END OMIT/
+* Write Code Like the Go Team
+
+- how to organize your code into packages, and what those packages should contain
+- code patterns and conventions that are prevalent in the standard library
+- how to write your code to be more clear and understandable
+- unwritten Go conventions that go beyond “go fmt” and make you look like a veteran Go contributor wrote it
+
+.link https://youtu.be/MzTcsI6tn-0 Ashley McNamara + Brian Ketelsen. Go best practices.
+
+* Code Organization
+
+* Package Organization - Libraries
+
+Packages contain code that has a single purpose
+
+  archive    cmd    crypto    errors    go    index    math    path    sort    syscall    unicode 
+  bufio    compress database  expvar    hash    internal  mime      reflect    strconv    
+  testing    unsafe builtin    container debug    flag
+
+* Package Organization - Libraries
+
+When a group of packages provides a common set of functionalities with different implementations, they're organized under a parent. Look at the contents of package encoding:
+
+  ascii85 base32 binary encoding.go hex pem
+  asn1 base64 csv gob json xml
+
+* Package Organization - Libraries
+
+- Packages names describe their purpose
+- It's very easy to see what a package does by looking at the name
+- Names are generally short
+- When necessary, use a descriptive parent package and several children implementing the functionality -- like the encoding package
+
+* Package Organization - Applications
+
+They're intended to be imported and used by some executable program like a service or command line tool.
+
+Application package organization has a huge impact on the testability and functionality of your system.
+
+When writing an application your goal should be to write code that is easy to understand, easy to refactor, and easy for someone else to maintain.
+
+* Package Organization - Applications
+
+Most libraries focus on providing a singularly scoped function; logging, encoding, network access.
+
+Your application will tie all of those libraries together to create a tool or service. That tool or service will be much larger in scope.
+
+When you're building an application, you should organize your code into packages, but those packages should be centered on two categories:
+
+- Domain Types
+- Services
+
+* Package Organization - Applications
+
+Domain Types are types that model your business functionality and objects.
+
+The domain type package, or root package of your application should not have any external dependencies.
+
+It exists for the sole purpose of describing your types and their behaviors. 
+
+.link https://medium.com/@benbjohnson/standard-package-layout-7cdbc8391fc1 Ben Johnson, Standard Package Layout
+
+* Package Organization - Applications
+
+Services are packages that operate on or with the domain types.
+
+The implementations of your domain interfaces should be in separate packages, organized by dependency.
+
+Dependencies include:
+
+- External data sources
+- Transport logic (http, RPC)
+
+You should have one package per dependency.
+
+* Package Organization - Applications
+
+- Simple testing
+- Easy substitution/replacement
+- No circular dependencies
+
+* Conventions
+
+* Naming Conventions - Packages
+
+Naming things is hard, but putting some thought into your type, function, and package names will make your code more readable.
+
+short:
+- Prefer "transport" over "transportmechanisms"
+
+clear:
+- Name for clarity based on function: "bytes"
+- Name to describe implementation of external dependency: "postgres"
+
+* Naming Conventions - Packages
+
+Packages should provide functionality for one and only one purpose. Avoid catchall packages:
+
+- util
+- helpers
+- etc.
+
+Frequently they're a sign that you're missing an interface somewhere.
+
+* Naming Conventions - Variables
+
+Some common conventions for variable names:
+
+- use camelCase not snake_case
+- use single letter variables to represent indexes
+    for i:=0; i < 10; i++ {}
+- use short but descriptive variable names for other things
+    var count int
+    var cust Customer
+
+There are no bonus points in Go for obfuscating your code by using unnecessarily short variables. Use the scope of the variable as your guide. The farther away from declaration you use it, the longer the name should be.
+
+* Naming Conventions - Variables
+
+
+- use repeated letters to represent a collection/slice/array
+    var tt []*Thing
+- inside a loop/range, use the single letter
+    for i, t := range tt {}
+
+These conventions are common inside Go's own source code.
+
+* Naming Conventions - Functions and Methods
+
+Avoid a package-level function name that repeats the package name.
+
+GOOD:  log.Info()
+BAD:   log.LogInfo()
+
+The package name already declares the purpose of the package, so there's no need to repeat it.
+
+Go code doesn't have setters and getters.
+
+GOOD:  custSvc.Customer()
+BAD:   custSvc.GetCustomer()
+
+* Naming Conventions - Interfaces
+
+If your interface has only one function, append "-er" to the function name:
+
+    type Stringer interface{
+        String() string
+    }
+
+If your interface has more than one function, use a name to represent its functionality:
+
+    type CustomerStorage interface {
+        Customer(id int) (*Customer, error)
+        Save(c *Customer)  error
+        Delete(id int) error
+    }
+
+* Naming Conventions - Interfaces
+
+Some purists think that all interfaces should end in -er. I think interfaces should be descriptive and readable.
+
+    type CustomerStorer interface {} // MEH
+    type CustomerStorage interface {} // Better
+
+* Naming Conventions - Source Code
+
+Inside a package separate code into logical concerns.
+
+If the package deals with multiple types, keep the logic for each type in its own source file:
+
+    package: postgres
+    
+    orders.go
+    suppliers.go
+    products.go
+
+* Naming Conventions - Source Code
+
+In the package that defines your domain objects, define the types and interfaces for each object in the same source file:
+
+    package: inventory
+    
+    orders.go
+    -- contains Orders type
+       and OrderStorage interface
+
+
+
 
 * Question time
 
 * Resources
-
-I would like to recommend several online resources:
 
 .link http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/ 50 Shades of Go
 .link https://go-traps.appspot.com Go Traps
@@ -349,4 +767,4 @@ I would like to recommend several online resources:
 
 .link https://dave.cheney.net/resources-for-new-go-programmers Resources for new Go programmers
 .link https://golang.org/doc/effective_go.html Effective Go
-.link https://miek.nl/go/ LEARNING GO online book (up to [[https://miek.nl/go/#interfaces][Interfaces]])
+.link https://miek.nl/go/ LEARNING GO online book

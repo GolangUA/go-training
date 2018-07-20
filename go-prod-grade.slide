@@ -1,0 +1,234 @@
+How to create production grade solutions with Golang
+Tags: GolangUA, Go, GoBootCamp
+
+Ivan Kutuzov
+SoftServe
+https://golang.org.ua
+@GolangUA
+@arbrix
+
+* Agenda:
+
+- Recap
+- Production Grade
+- QA
+
+* Go Syntax
+
+- basic types
+- user types
+- buildin functions
+- funcions, methods, interfaces
+- packages, build, dependencies
+- tests, profile, performance, stress testing
+- concurrency
+
+.link http://blog.tamizhvendan.in/blog/2017/05/01/using-golang-in-production-my-experiences/ Using Golang in Production - My Experiences by Tamizhvendan
+
+* Stdlib
+
+~140 Packages
+
+.image ./img/golang-stdlib-tag-cloud.png _ 900
+
+* Variety of packages
+
+.link https://awesome-go.com
+.link https://godoc.org
+.link http://go-search.org/search go-search.org - 1.015.598 packages
+
+* Nice toolset
+
+- *go*build*, which builds Go binaries using only information in the source files themselves, no separate makefiles
+- *go*test*, for unit testing and microbenchmarks
+- *go*fmt*, for formatting code
+- *go*get*, for retrieving and installing remote packages
+- *go*vet*, a static analyzer looking for potential errors in code
+- *go*run*, a shortcut for building and executing code
+- *godoc*, for displaying documentation or serving it via HTTP
+- *gorename*, for renaming variables, functions, and so on in a type-safe way
+- *go*generate*, a standard way to invoke code generators
+.caption source: [[https://github.com/golang/go/wiki/CodeTools][Code Tools]]
+.caption source: [[https://github.com/golang/go/wiki/GoGenerateTools][Generate Tools]]
+.caption source: [[https://github.com/golang/go/wiki/PackageManagementTools][Package Management Tools]]
+
+* From the theory to practice
+
+* Site Reliability Engineering
+
+[[https://landing.google.com/sre/book.html][Site Reliability Engineering]]
+.caption Edited by Betsy Beyer, Chris Jones, Jennifer Petoff and Niall Richard Murphy
+
+.link https://medium.com/@copyconstruct/logs-and-metrics-6d34d3026e38 Logs and Metrics by Cindy Sridharan
+
+* Production-grade Go
+
+The big difference between your code and your code in production is all the ways it can fail; production-grade code is code that recognizes that difference, and prevents or plans for it.
+
+.link https://www.oreilly.com/ideas/how-to-ship-production-grade-go How to ship production-grade Go by Kavya Joshi
+
+* What to think about at first:
+
+- Package Management
+- Project Organization / Isolation Layers
+- Testing
+- Cross Compilation Bliss & Multi-OS Mistakes
+- Error Handling
+
+* Wrap Errors
+
+  _, err := ioutil.ReadAll(r)
+  if err != nil {
+          return errors.Wrap(err, "read failed") // "read failed: improperly formatted data"
+  }
+
+
+
+  // would be good to have: "starting app: querying database: loading migrations: run migration #12: pq: invalid syntax near 'JOIN'"
+
+* Report Panics
+
+To report panics of goroutines your application creates, use the inbuilt recover function.
+
+  // postToSlack creates a message with the captured panic, timestamp, and hostname,
+  // and posts it to the configured Slack channel.
+  func postToSlack(panic interface{}) {
+    ...
+  }
+  
+  func reportPanics() {
+    // Capture the panic if there is one, and report it.
+    if panic := recover(); panic != nil {
+      postToSlack(panic)
+    }
+  }
+  
+  // Version without panic reporting; this is not what you want!: 
+  func runWithoutPanicReporting() {
+    // myFunc encapsulates the core logic to do something.
+    // Run it in a separate goroutine.
+    go myFunc()
+  }
+
+* Continue... 
+
+  // Version with panic reporting; this is what you want:
+  func runMyFuncPanicReporting() {
+    go func() {
+      // Defer reportPanics before calling myFunc --  
+      // if myFunc panics, reportPanic will capture and report the panic right before
+      // the goroutine exits.
+      defer reportPanics()
+      myFunc()
+    }()
+  }
+
+* Use structured logging
+
+  {"level":"info","msg":"Redirecting user","server":"www.google.com",
+  "time":"2017-03-25T17:00:00-08:00","userId":1}
+
+For example, you could arrange for a request handler's logs to always include the *userId*, *requestId* and *endpoint* fields.
+
+* Ship application metrics
+
+- What metrics should you collect?
+- How would you instrument your application to collect these metrics, and where would you send them?
+
+* Test more than you think you should
+
+- If your package provides a public interface — and it likely does, if only to be used by the rest of your code — test the interface as a consumer would.
+- Write integration tests.
+- Use the right tools for testing. 
+- Ensure your tests cover all the important code-paths.
+
+* What about containers
+
+
+  package main
+  import (
+      "fmt"
+      "io/ioutil"
+      "net/http"
+      "os"
+  )
+  func main() {
+      resp, err := http.Get("https://google.com")
+      check(err)
+      body, err := ioutil.ReadAll(resp.Body)
+      check(err)
+      fmt.Println(len(body))
+  }
+  func check(err error) {
+      if err != nil {
+          fmt.Println(err)
+          os.Exit(1)
+      }
+  }
+
+* Dockerize
+
+  FROM golang:latest 
+  RUN mkdir /app 
+  ADD . /app/ 
+  WORKDIR /app 
+  RUN go build -o main . 
+  CMD ["/app/main"]
+
+But wait, `golang:latest` 267 MB
+.caption source: [[https://hub.docker.com/r/library/golang/tags/][docker hub]]
+
+* Docker from sratch
+
+  FROM scratch
+  ADD main /
+  CMD ["/main"]
+
+But we should compile it first.
+
+  GOOS=linux go build -o main .
+
+* Check
+
+  $ docker run -it example-scratch
+  no such file or directory
+
+Why? 
+
+Go looking for the libraries that were used at compilation time at the host system, but it isn't exists at *docker*from*sratch*
+
+* How to compile with all dependencies
+
+  CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+One more check...
+
+  $ docker run -it example-scratch
+  Get https://google.com: x509: failed to load system roots and no roots provided
+
+* Add CA that exists at the systems
+
+  FROM scratch
+  ADD ca-certificates.crt /etc/ssl/certs/
+  ADD main /
+  CMD ["/main"]
+
+Done!
+
+.caption source1: [[https://blog.codeship.com/building-minimal-docker-containers-for-go-applications/][Building Minimal Docker Containers for Go Applications]]
+.caption source2: [[http://www.jeffsloyer.io/post/cross-compiling-docker-alpine-golang/][Cross Compiling Golang With A Docker Alpine Container]]
+
+* Resources
+
+[[https://www.oreilly.com/ideas/how-to-ship-production-grade-go][How to ship production-grade Go]]
+[[https://npf.io/2017/03/3.5yrs-500k-lines-of-go/][3.5 Years, 500k Lines of Go (Part 1)]]
+[[https://peter.bourgon.org/go-in-production/][Go: Best Practices for Production Environments]]
+[[https://www.iron.io/go-after-2-years-in-production/][Go After 2 Years in Production (2013)]]
+[[https://gotocon.com/dl/goto-chicago-2016/slides/TravisReeder_GOInProduction.pdf][Go in production 2016]]
+
+
+[[https://golang.org/doc/code.html][How to Write Go Code]]
+[[https://golang.org/doc/effective_go.html][Effective Go]]
+[[https://github.com/golang/go/wiki/CodeReviewComments][Go Code Review Comments]]
+
+* Questions?
